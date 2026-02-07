@@ -96,6 +96,14 @@ log_error() { log "ERROR" "$@"; }
 log_debug() { log "DEBUG" "$@"; }
 
 # ============================================================================
+# Load Commands
+# ============================================================================
+
+if [[ -f "$BASHOBOT_DIR/lib/commands.sh" ]]; then
+    source "$BASHOBOT_DIR/lib/commands.sh"
+fi
+
+# ============================================================================
 # Provider Loading
 # ============================================================================
 
@@ -180,6 +188,20 @@ process_message() {
     
     log_info "Processing message from $source: ${user_message:0:50}..."
     
+    # Check if it's a command
+    if [[ "$user_message" == /* ]] && type process_command &>/dev/null; then
+        local cmd_output
+        cmd_output=$(process_command "$session_id" "$user_message")
+        local cmd_status=$?
+        
+        if [[ $cmd_status -eq 0 ]]; then
+            # Command handled, return output
+            echo "$cmd_output"
+            return 0
+        fi
+        # cmd_status == 1 means not a command, continue to LLM
+    fi
+    
     # Add user message to session
     append_message "$session_id" "user" "$user_message"
     
@@ -251,8 +273,10 @@ daemon_loop() {
                 local response
                 response=$(process_message "$session_id" "$message" "$source")
                 
-                # Write response to output pipe
-                echo "${session_id}|${response}" > "$OUTPUT_PIPE"
+                # Write response to output pipe (base64 encode to handle newlines)
+                local encoded_response
+                encoded_response=$(echo "$response" | base64)
+                echo "${session_id}|${encoded_response}" > "$OUTPUT_PIPE"
                 
                 # Also send via interface if applicable
                 if [[ "$source" == "telegram" ]]; then
@@ -289,7 +313,8 @@ send_message() {
         resp_message=$(echo "$line" | cut -d'|' -f2-)
         
         if [[ "$resp_session" == "$session_id" ]]; then
-            echo "$resp_message"
+            # Decode base64 response
+            echo "$resp_message" | base64 -d
             break
         fi
     done
@@ -408,20 +433,19 @@ main() {
             # Interactive mode that talks to daemon via pipes
             echo "╔════════════════════════════════════════════╗"
             echo "║       Bashobot Interactive CLI             ║"
-            echo "║  Type 'exit' or Ctrl+C to quit             ║"
+            echo "║  Type /help for commands, /exit to quit    ║"
             echo "╚════════════════════════════════════════════╝"
             echo ""
             local session_id="cli_$$"
             while true; do
                 echo -n "You: "
-                read -r input
-                [[ "$input" == "exit" ]] && break
+                read -r input || break  # Handle Ctrl+D
                 [[ -z "$input" ]] && continue
+                [[ "$input" == "/exit" ]] && { echo "Goodbye!"; break; }
                 echo -n "Bot: "
                 send_message "$input" "$session_id"
                 echo ""
             done
-            echo "Goodbye!"
             ;;
         -status)
             status_check
