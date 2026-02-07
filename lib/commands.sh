@@ -73,6 +73,7 @@ cmd_help() {
     echo "Available commands:"
     echo "  /model [name]  - Show or switch the current model"
     echo "  /tools [on|off]- Show or toggle tool usage"
+    echo "  /memory [cmd]  - Memory system (list|save|search|clear)"
     echo "  /context       - Show session context/token usage"
     echo "  /clear         - Clear conversation history"
     echo "  /summarize     - Force summarize the conversation"
@@ -125,6 +126,72 @@ cmd_tools() {
 }
 
 # ============================================================================
+# Command: /memory [subcommand]
+# Memory system management
+# ============================================================================
+cmd_memory() {
+    local session_id="$1"
+    shift
+    local subcommand="$1"
+    shift 2>/dev/null || true
+    local args="$*"
+    
+    if [[ -z "$subcommand" ]]; then
+        subcommand="list"
+    fi
+    
+    case "$subcommand" in
+        list|ls)
+            if type cmd_memory_list &>/dev/null; then
+                cmd_memory_list "$args"
+            else
+                echo "Memory system not available."
+            fi
+            ;;
+        save)
+            if type cmd_memory_save &>/dev/null; then
+                cmd_memory_save "$session_id"
+            else
+                echo "Memory system not available."
+            fi
+            ;;
+        search|find)
+            if type cmd_memory_search &>/dev/null; then
+                cmd_memory_search "$args"
+            else
+                echo "Memory system not available."
+            fi
+            ;;
+        clear)
+            if type cmd_memory_clear &>/dev/null; then
+                cmd_memory_clear
+            else
+                echo "Memory system not available."
+            fi
+            ;;
+        on|enable)
+            export BASHOBOT_MEMORY_ENABLED="true"
+            echo "Memory system enabled."
+            ;;
+        off|disable)
+            export BASHOBOT_MEMORY_ENABLED="false"
+            echo "Memory system disabled."
+            ;;
+        *)
+            echo "Unknown memory subcommand: $subcommand"
+            echo ""
+            echo "Usage: /memory [command]"
+            echo "  list         - Show recent memories (default)"
+            echo "  save         - Save current session to memory"
+            echo "  search <q>   - Search memories by keyword"
+            echo "  clear        - Delete all memories"
+            echo "  on|off       - Enable/disable memory system"
+            ;;
+    esac
+    return 0
+}
+
+# ============================================================================
 # Command: /context
 # Show current session context usage
 # ============================================================================
@@ -142,10 +209,19 @@ cmd_context() {
 
 # ============================================================================
 # Command: /clear
-# Clear conversation history
+# Clear conversation history (optionally saves to memory first)
 # ============================================================================
 cmd_clear() {
     local session_id="$1"
+    
+    # Save to memory before clearing if memory is enabled
+    if [[ "$BASHOBOT_MEMORY_ENABLED" == "true" ]] && type save_session_to_memory &>/dev/null; then
+        local saved
+        saved=$(save_session_to_memory "$session_id" 2>/dev/null)
+        if [[ -n "$saved" ]]; then
+            echo "Saved conversation to memory: $saved"
+        fi
+    fi
     
     if type clear_session &>/dev/null; then
         clear_session "$session_id"
@@ -204,6 +280,10 @@ process_command() {
             ;;
         tools)
             cmd_tools "$session_id" $args
+            return $?
+            ;;
+        memory)
+            cmd_memory "$session_id" $args
             return $?
             ;;
         help)

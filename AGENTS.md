@@ -130,8 +130,9 @@ TELEGRAM_ALLOWED_USERS=123456789  # Comma-separated user IDs (optional)
 | `/help` | Show available commands |
 | `/model [name]` | Show or switch model (e.g., `/model gemini-2.5-pro`) |
 | `/tools [on\|off]` | Show or toggle tool usage |
+| `/memory [cmd]` | Memory system (list, save, search, clear, on/off) |
 | `/context` | Show session context/token usage |
-| `/clear` | Clear conversation history |
+| `/clear` | Clear conversation (auto-saves to memory) |
 | `/summarize` | Force summarize the conversation |
 | `/exit` | Exit CLI (handled client-side, not sent to daemon) |
 
@@ -177,6 +178,62 @@ Bashobot supports tool calling for bash execution and file operations. Tools are
 | `get_tools_gemini()` | Get tools in Gemini format |
 | `get_tools_openai()` | Get tools in OpenAI format |
 | `get_tools_claude()` | Get tools in Claude format |
+
+## Memory System
+
+Long-term memory through conversation summaries and keyword-based retrieval. Memories persist across sessions.
+
+### How It Works
+
+1. **Auto-save on /clear**: Conversations are automatically saved to memory when cleared
+2. **Keyword Extraction**: Extracts keywords from summaries for search
+3. **Topic Extraction**: Uses LLM to identify main topics
+4. **Relevance Search**: Matches keywords between query and stored memories
+5. **Context Injection**: Relevant memories are injected at the start of new conversations
+
+### Memory Structure
+
+```json
+{
+  "id": "mem_1234567890",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "session_id": "original_session_id",
+  "summary": "Conversation summary...",
+  "keywords": ["keyword1", "keyword2"],
+  "topics": ["topic1", "topic2"],
+  "message_count": 15
+}
+```
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `/memory` or `/memory list` | Show recent memories |
+| `/memory save` | Save current session to memory |
+| `/memory search <query>` | Search memories by keyword |
+| `/memory clear` | Delete all memories |
+| `/memory on\|off` | Enable/disable memory system |
+
+### Configuration (Environment Variables)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `BASHOBOT_MEMORY_ENABLED` | `true` | Enable/disable memory system |
+| `MAX_MEMORIES_IN_CONTEXT` | `3` | Max memories to load into context |
+| `MIN_MESSAGES_FOR_MEMORY` | `4` | Min messages before saving to memory |
+
+### Key Functions (lib/memory.sh)
+
+| Function | Purpose |
+|----------|---------|
+| `save_to_memory()` | Save a summary to memory storage |
+| `save_session_to_memory()` | Save current session to memory |
+| `search_memories()` | Find relevant memories by query |
+| `get_memory_context()` | Format memories for context injection |
+| `inject_memory_context()` | Add memories to message array |
+| `extract_keywords()` | Extract keywords from text |
+| `extract_topics()` | Use LLM to identify topics |
 
 ## Session Management
 

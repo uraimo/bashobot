@@ -107,6 +107,10 @@ if [[ -f "$BASHOBOT_DIR/lib/session.sh" ]]; then
     source "$BASHOBOT_DIR/lib/session.sh"
 fi
 
+if [[ -f "$BASHOBOT_DIR/lib/memory.sh" ]]; then
+    source "$BASHOBOT_DIR/lib/memory.sh"
+fi
+
 if [[ -f "$BASHOBOT_DIR/lib/commands.sh" ]]; then
     source "$BASHOBOT_DIR/lib/commands.sh"
 fi
@@ -224,6 +228,13 @@ process_message() {
         messages=$(get_messages_for_llm "$session_id")
     else
         messages=$(get_messages "$session_id")
+    fi
+    
+    # Inject relevant memory context if this is the first message in session
+    local msg_count
+    msg_count=$(echo "$messages" | jq 'length')
+    if [[ $msg_count -le 2 ]] && type inject_memory_context &>/dev/null; then
+        messages=$(inject_memory_context "$messages" "$user_message")
     fi
     
     # Call LLM provider (function defined in provider script)
