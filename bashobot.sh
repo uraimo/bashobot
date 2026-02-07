@@ -99,6 +99,10 @@ log_debug() { log "DEBUG" "$@"; }
 # Load Libraries
 # ============================================================================
 
+if [[ -f "$BASHOBOT_DIR/lib/tools.sh" ]]; then
+    source "$BASHOBOT_DIR/lib/tools.sh"
+fi
+
 if [[ -f "$BASHOBOT_DIR/lib/session.sh" ]]; then
     source "$BASHOBOT_DIR/lib/session.sh"
 fi

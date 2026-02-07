@@ -109,6 +109,7 @@ BASHOBOT_INTERFACE=none ./bashobot.sh -daemon
 ```bash
 BASHOBOT_LLM=gemini              # Provider: gemini, claude, openai
 BASHOBOT_INTERFACE=telegram      # Interface: telegram, none
+BASHOBOT_TOOLS_ENABLED=true      # Enable/disable tool use
 
 GEMINI_API_KEY=your_key
 ANTHROPIC_API_KEY=your_key
@@ -116,6 +117,10 @@ OPENAI_API_KEY=your_key
 
 TELEGRAM_BOT_TOKEN=your_token
 TELEGRAM_ALLOWED_USERS=123456789  # Comma-separated user IDs (optional)
+
+# Tool security (optional)
+#BASHOBOT_ALLOWED_DIRS=/home/user,/tmp  # Restrict file access
+#BASHOBOT_BASH_TIMEOUT=30               # Command timeout in seconds
 ```
 
 ## Current Slash Commands
@@ -124,10 +129,54 @@ TELEGRAM_ALLOWED_USERS=123456789  # Comma-separated user IDs (optional)
 |---------|-------------|
 | `/help` | Show available commands |
 | `/model [name]` | Show or switch model (e.g., `/model gemini-2.5-pro`) |
+| `/tools [on\|off]` | Show or toggle tool usage |
 | `/context` | Show session context/token usage |
 | `/clear` | Clear conversation history |
 | `/summarize` | Force summarize the conversation |
 | `/exit` | Exit CLI (handled client-side, not sent to daemon) |
+
+## Tool Use
+
+Bashobot supports tool calling for bash execution and file operations. Tools are enabled by default.
+
+### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `bash` | Execute shell commands with timeout |
+| `read_file` | Read file contents (with offset/limit support) |
+| `write_file` | Write content to files (creates directories) |
+| `list_files` | List directory contents |
+
+### Configuration (Environment Variables)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `BASHOBOT_TOOLS_ENABLED` | `true` | Enable/disable all tools |
+| `BASHOBOT_ALLOWED_DIRS` | (empty) | Comma-separated allowed directories (empty = all) |
+| `BASHOBOT_MAX_OUTPUT` | `50000` | Max bytes of command output |
+| `BASHOBOT_BASH_TIMEOUT` | `30` | Bash command timeout in seconds |
+
+### Security
+
+- Set `BASHOBOT_TOOLS_ENABLED=false` to disable all tools
+- Use `BASHOBOT_ALLOWED_DIRS` to restrict file access to specific directories
+- Commands run with a timeout to prevent hangs
+- Output is truncated to prevent memory issues
+
+### Key Functions (lib/tools.sh)
+
+| Function | Purpose |
+|----------|---------|
+| `get_tools_definition()` | Get tool definitions (provider-agnostic) |
+| `execute_tool()` | Dispatch and execute a tool by name |
+| `tool_bash()` | Execute bash commands |
+| `tool_read_file()` | Read file contents |
+| `tool_write_file()` | Write to files |
+| `tool_list_files()` | List directory contents |
+| `get_tools_gemini()` | Get tools in Gemini format |
+| `get_tools_openai()` | Get tools in OpenAI format |
+| `get_tools_claude()` | Get tools in Claude format |
 
 ## Session Management
 
@@ -208,11 +257,10 @@ JSON files in `~/.bashobot/sessions/`:
 
 ## Future Improvements (Ideas)
 
-1. **Tool use** - Add bash execution, file read/write capabilities
-2. **More interfaces** - WhatsApp (via bridge), Discord, Slack
-3. **Webhook mode** - Instead of Telegram polling, use webhooks
-4. **Streaming** - SSE support for streaming responses
-5. **More commands** - `/save`, `/load`, `/sessions`
+1. **More interfaces** - WhatsApp (via bridge), Discord, Slack
+2. **Webhook mode** - Instead of Telegram polling, use webhooks
+3. **Streaming** - SSE support for streaming responses
+4. **More commands** - `/save`, `/load`, `/sessions`
 
 ## Debugging
 

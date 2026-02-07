@@ -72,6 +72,7 @@ cmd_help() {
     local session_id="$1"
     echo "Available commands:"
     echo "  /model [name]  - Show or switch the current model"
+    echo "  /tools [on|off]- Show or toggle tool usage"
     echo "  /context       - Show session context/token usage"
     echo "  /clear         - Clear conversation history"
     echo "  /summarize     - Force summarize the conversation"
@@ -79,6 +80,47 @@ cmd_help() {
     echo "  /exit          - Exit the CLI session (CLI only)"
     echo ""
     echo "Any other input is sent to the AI assistant."
+    return 0
+}
+
+# ============================================================================
+# Command: /tools [on|off]
+# Show or toggle tool usage
+# ============================================================================
+cmd_tools() {
+    local session_id="$1"
+    shift
+    local action="$*"
+    
+    if [[ -z "$action" ]]; then
+        echo "Tools enabled: $BASHOBOT_TOOLS_ENABLED"
+        echo ""
+        if [[ "$BASHOBOT_TOOLS_ENABLED" == "true" ]]; then
+            echo "Available tools:"
+            echo "  - bash: Execute shell commands"
+            echo "  - read_file: Read file contents"
+            echo "  - write_file: Write to files"
+            echo "  - list_files: List directory contents"
+        fi
+        echo ""
+        echo "Usage: /tools on|off"
+        return 0
+    fi
+    
+    case "$action" in
+        on|true|enable|enabled)
+            export BASHOBOT_TOOLS_ENABLED="true"
+            echo "Tools enabled."
+            ;;
+        off|false|disable|disabled)
+            export BASHOBOT_TOOLS_ENABLED="false"
+            echo "Tools disabled."
+            ;;
+        *)
+            echo "Unknown option: $action"
+            echo "Usage: /tools on|off"
+            ;;
+    esac
     return 0
 }
 
@@ -158,6 +200,10 @@ process_command() {
     case "$cmd" in
         model)
             cmd_model "$session_id" $args
+            return $?
+            ;;
+        tools)
+            cmd_tools "$session_id" $args
             return $?
             ;;
         help)
