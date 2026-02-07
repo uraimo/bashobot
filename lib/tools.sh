@@ -111,6 +111,24 @@ get_tools_definition() {
       },
       "required": ["path"]
     }
+  },
+  {
+    "name": "memory_search",
+    "description": "Search through past conversation memories to find relevant context. Use this when the user refers to previous discussions, asks about past topics, or when you need context from earlier conversations. Returns summaries of relevant past conversations.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Search query - keywords or topics to search for in past conversations"
+        },
+        "max_results": {
+          "type": "integer",
+          "description": "Maximum number of memories to return (default: 3)"
+        }
+      },
+      "required": ["query"]
+    }
   }
 ]
 EOF
@@ -341,6 +359,66 @@ tool_list_files() {
         '{path: $path, listing: $listing}'
 }
 
+# Search conversation memories
+tool_memory_search() {
+    local query="$1"
+    local max_results="${2:-3}"
+    
+    if [[ -z "$query" ]]; then
+        echo '{"error": "No search query provided"}'
+        return 1
+    fi
+    
+    log_info "Tool memory_search: $query (max_results=$max_results)"
+    
+    # Check if memory system is available
+    if ! type search_memories &>/dev/null; then
+        echo '{"error": "Memory system not available"}'
+        return 1
+    fi
+    
+    if [[ "$BASHOBOT_MEMORY_ENABLED" != "true" ]]; then
+        echo '{"error": "Memory system is disabled"}'
+        return 1
+    fi
+    
+    local results
+    results=$(search_memories "$query" "$max_results")
+    
+    local count
+    count=$(echo "$results" | jq 'length')
+    
+    if [[ $count -eq 0 ]]; then
+        jq -n \
+            --arg query "$query" \
+            '{
+                query: $query,
+                found: 0,
+                message: "No relevant memories found for this query.",
+                memories: []
+            }'
+    else
+        # Format results for the LLM
+        local formatted
+        formatted=$(echo "$results" | jq '[.[] | {
+            date: (.timestamp | split("T")[0]),
+            topics: (.topics | join(", ")),
+            summary: .summary,
+            relevance_score: .relevance_score
+        }]')
+        
+        jq -n \
+            --arg query "$query" \
+            --argjson count "$count" \
+            --argjson memories "$formatted" \
+            '{
+                query: $query,
+                found: $count,
+                memories: $memories
+            }'
+    fi
+}
+
 # ============================================================================
 # Tool Dispatcher
 # ============================================================================
@@ -381,6 +459,12 @@ execute_tool() {
             path=$(echo "$args_json" | jq -r '.path // empty')
             recursive=$(echo "$args_json" | jq -r '.recursive // false')
             tool_list_files "$path" "$recursive"
+            ;;
+        memory_search)
+            local query max_results
+            query=$(echo "$args_json" | jq -r '.query // empty')
+            max_results=$(echo "$args_json" | jq -r '.max_results // 3')
+            tool_memory_search "$query" "$max_results"
             ;;
         *)
             echo "{\"error\": \"Unknown tool: $tool_name\"}"

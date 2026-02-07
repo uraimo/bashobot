@@ -102,6 +102,7 @@ cmd_tools() {
             echo "  - read_file: Read file contents"
             echo "  - write_file: Write to files"
             echo "  - list_files: List directory contents"
+            echo "  - memory_search: Search past conversations"
         fi
         echo ""
         echo "Usage: /tools on|off"

@@ -148,6 +148,7 @@ Bashobot supports tool calling for bash execution and file operations. Tools are
 | `read_file` | Read file contents (with offset/limit support) |
 | `write_file` | Write content to files (creates directories) |
 | `list_files` | List directory contents |
+| `memory_search` | Search past conversation memories |
 
 ### Configuration (Environment Variables)
 
@@ -175,6 +176,7 @@ Bashobot supports tool calling for bash execution and file operations. Tools are
 | `tool_read_file()` | Read file contents |
 | `tool_write_file()` | Write to files |
 | `tool_list_files()` | List directory contents |
+| `tool_memory_search()` | Search conversation memories |
 | `get_tools_gemini()` | Get tools in Gemini format |
 | `get_tools_openai()` | Get tools in OpenAI format |
 | `get_tools_claude()` | Get tools in Claude format |
