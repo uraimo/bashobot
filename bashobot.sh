@@ -96,8 +96,12 @@ log_error() { log "ERROR" "$@"; }
 log_debug() { log "DEBUG" "$@"; }
 
 # ============================================================================
-# Load Commands
+# Load Libraries
 # ============================================================================
+
+if [[ -f "$BASHOBOT_DIR/lib/session.sh" ]]; then
+    source "$BASHOBOT_DIR/lib/session.sh"
+fi
 
 if [[ -f "$BASHOBOT_DIR/lib/commands.sh" ]]; then
     source "$BASHOBOT_DIR/lib/commands.sh"
@@ -205,9 +209,18 @@ process_message() {
     # Add user message to session
     append_message "$session_id" "user" "$user_message"
     
-    # Get conversation history
+    # Check if we need to summarize before calling LLM
+    if type check_and_summarize &>/dev/null; then
+        check_and_summarize "$session_id"
+    fi
+    
+    # Get conversation history (includes summary if present)
     local messages
-    messages=$(get_messages "$session_id")
+    if type get_messages_for_llm &>/dev/null; then
+        messages=$(get_messages_for_llm "$session_id")
+    else
+        messages=$(get_messages "$session_id")
+    fi
     
     # Call LLM provider (function defined in provider script)
     local response

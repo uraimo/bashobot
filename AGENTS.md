@@ -124,7 +124,49 @@ TELEGRAM_ALLOWED_USERS=123456789  # Comma-separated user IDs (optional)
 |---------|-------------|
 | `/help` | Show available commands |
 | `/model [name]` | Show or switch model (e.g., `/model gemini-2.5-pro`) |
+| `/context` | Show session context/token usage |
+| `/clear` | Clear conversation history |
+| `/summarize` | Force summarize the conversation |
 | `/exit` | Exit CLI (handled client-side, not sent to daemon) |
+
+## Session Management
+
+Bashobot includes automatic context window management to prevent token limit issues and reduce API costs.
+
+### How It Works
+
+1. **Token Estimation**: Uses character-based approximation (~4 chars per token)
+2. **Auto-Summarization**: When context exceeds `MAX_CONTEXT_TOKENS` (default: 8000):
+   - Older messages are summarized using the LLM
+   - Recent messages (last ~2000 tokens) are preserved
+   - Summary is prepended to future conversations
+3. **Session Structure**:
+   ```json
+   {
+     "summary": "Previous conversation summary...",
+     "summary_message_count": 15,
+     "messages": [...]
+   }
+   ```
+
+### Configuration (Environment Variables)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MAX_CONTEXT_TOKENS` | 110000 | Trigger summarization at this token count |
+| `KEEP_RECENT_TOKENS` | 2000 | Keep this many tokens of recent messages |
+| `SUMMARY_MAX_TOKENS` | 500 | Target size for summaries |
+
+### Key Functions (lib/session.sh)
+
+| Function | Purpose |
+|----------|---------|
+| `estimate_tokens()` | Estimate token count from text |
+| `get_messages_for_llm()` | Get messages with summary prepended |
+| `check_and_summarize()` | Check limits and auto-summarize if needed |
+| `clear_session()` | Clear all messages and summary |
+| `force_summarize()` | Manually trigger summarization |
+| `get_session_stats()` | Get context usage statistics |
 
 ## Technical Notes
 
@@ -167,11 +209,10 @@ JSON files in `~/.bashobot/sessions/`:
 ## Future Improvements (Ideas)
 
 1. **Tool use** - Add bash execution, file read/write capabilities
-2. **Memory system** - Summarize old conversations, context window management
-3. **More interfaces** - WhatsApp (via bridge), Discord, Slack
-4. **Webhook mode** - Instead of Telegram polling, use webhooks
-5. **Streaming** - SSE support for streaming responses
-6. **More commands** - `/clear`, `/save`, `/load`, `/sessions`
+2. **More interfaces** - WhatsApp (via bridge), Discord, Slack
+3. **Webhook mode** - Instead of Telegram polling, use webhooks
+4. **Streaming** - SSE support for streaming responses
+5. **More commands** - `/save`, `/load`, `/sessions`
 
 ## Debugging
 

@@ -10,8 +10,8 @@
 # ============================================================================
 
 # Approximate token limits (conservative estimates)
-# Most models have 100k+ context, but we want to keep costs down and responses fast
-MAX_CONTEXT_TOKENS="${MAX_CONTEXT_TOKENS:-8000}"      # Trigger summarization at this point
+# Most models have 100k+ context now
+MAX_CONTEXT_TOKENS="${MAX_CONTEXT_TOKENS:-110000}"    # Trigger summarization at this point
 KEEP_RECENT_TOKENS="${KEEP_RECENT_TOKENS:-2000}"      # Keep this many tokens of recent messages
 SUMMARY_MAX_TOKENS="${SUMMARY_MAX_TOKENS:-500}"        # Target size for summaries
 

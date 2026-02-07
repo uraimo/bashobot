@@ -72,10 +72,64 @@ cmd_help() {
     local session_id="$1"
     echo "Available commands:"
     echo "  /model [name]  - Show or switch the current model"
+    echo "  /context       - Show session context/token usage"
+    echo "  /clear         - Clear conversation history"
+    echo "  /summarize     - Force summarize the conversation"
     echo "  /help          - Show this help message"
     echo "  /exit          - Exit the CLI session (CLI only)"
     echo ""
     echo "Any other input is sent to the AI assistant."
+    return 0
+}
+
+# ============================================================================
+# Command: /context
+# Show current session context usage
+# ============================================================================
+cmd_context() {
+    local session_id="$1"
+    
+    if type get_session_stats &>/dev/null; then
+        echo "Session: $session_id"
+        get_session_stats "$session_id"
+    else
+        echo "Session management not available."
+    fi
+    return 0
+}
+
+# ============================================================================
+# Command: /clear
+# Clear conversation history
+# ============================================================================
+cmd_clear() {
+    local session_id="$1"
+    
+    if type clear_session &>/dev/null; then
+        clear_session "$session_id"
+        echo "Conversation cleared. Starting fresh!"
+    else
+        # Fallback if session lib not loaded
+        local session_file
+        session_file=$(get_session_file "$session_id")
+        echo '{"messages":[]}' | jq '.' > "$session_file"
+        echo "Conversation cleared. Starting fresh!"
+    fi
+    return 0
+}
+
+# ============================================================================
+# Command: /summarize
+# Force summarize the current conversation
+# ============================================================================
+cmd_summarize() {
+    local session_id="$1"
+    
+    if type force_summarize &>/dev/null; then
+        force_summarize "$session_id"
+    else
+        echo "Session summarization not available."
+    fi
     return 0
 }
 
@@ -108,6 +162,18 @@ process_command() {
             ;;
         help)
             cmd_help "$session_id" $args
+            return $?
+            ;;
+        context)
+            cmd_context "$session_id" $args
+            return $?
+            ;;
+        clear)
+            cmd_clear "$session_id" $args
+            return $?
+            ;;
+        summarize)
+            cmd_summarize "$session_id" $args
             return $?
             ;;
         *)
