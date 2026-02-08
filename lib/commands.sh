@@ -20,7 +20,7 @@ cmd_model() {
         # Show current model
         echo "Current provider: $LLM_PROVIDER"
         case "$LLM_PROVIDER" in
-            gemini)  echo "Current model: ${GEMINI_MODEL:-gemini-3.0-flash}" ;;
+            gemini)  echo "Current model: ${GEMINI_MODEL:-gemini-3-flash-preview}" ;;
             claude)  echo "Current model: ${CLAUDE_MODEL:-claude-sonnet-4-20250514}" ;;
             openai)  echo "Current model: ${OPENAI_MODEL:-gpt-4o}" ;;
             *)       echo "Current model: unknown" ;;
@@ -28,7 +28,7 @@ cmd_model() {
         echo ""
         echo "Usage: /model <modelname>"
         echo "Examples:"
-        echo "  /model gemini-3.0-pro"
+        echo "  /model gemini-3-pro-preview"
         echo "  /model claude-sonnet-4-20250514"
         echo "  /model gpt-4o"
         return 0

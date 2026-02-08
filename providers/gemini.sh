@@ -5,7 +5,7 @@
 # Required env: GEMINI_API_KEY
 #
 
-GEMINI_MODEL="${GEMINI_MODEL:-gemini-3.0-flash}"
+GEMINI_MODEL="${GEMINI_MODEL:-gemini-3-flash-preview}"
 GEMINI_API_URL="https://generativelanguage.googleapis.com/v1beta/models"
 
 # Maximum tool call iterations to prevent infinite loops
