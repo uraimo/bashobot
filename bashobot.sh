@@ -323,6 +323,7 @@ daemon_loop() {
                 sleep "$HEARTBEAT_INTERVAL"
 
                 # Use a dedicated session to avoid polluting user sessions
+                init_session "heartbeat"
                 local response
                 response=$(process_message "heartbeat" "$heartbeat_message" "daemon")
 
