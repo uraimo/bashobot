@@ -475,11 +475,6 @@ tool_memory_search() {
     log_info "Tool memory_search: $query (max_results=$max_results)"
     
     # Check if memory system is available
-    if ! type search_memories &>/dev/null; then
-        echo '{"error": "Memory system not available"}'
-        return 1
-    fi
-    
     if [[ "$BASHOBOT_MEMORY_ENABLED" != "true" ]]; then
         echo '{"error": "Memory system is disabled"}'
         return 1

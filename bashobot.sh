@@ -115,21 +115,10 @@ log_debug() { log "DEBUG" "$@"; }
 # Load Libraries
 # ============================================================================
 
-if [[ -f "$BASHOBOT_DIR/lib/tools.sh" ]]; then
-    source "$BASHOBOT_DIR/lib/tools.sh"
-fi
-
-if [[ -f "$BASHOBOT_DIR/lib/session.sh" ]]; then
-    source "$BASHOBOT_DIR/lib/session.sh"
-fi
-
-if [[ -f "$BASHOBOT_DIR/lib/memory.sh" ]]; then
-    source "$BASHOBOT_DIR/lib/memory.sh"
-fi
-
-if [[ -f "$BASHOBOT_DIR/lib/commands.sh" ]]; then
-    source "$BASHOBOT_DIR/lib/commands.sh"
-fi
+source "$BASHOBOT_DIR/lib/tools.sh"
+source "$BASHOBOT_DIR/lib/session.sh"
+source "$BASHOBOT_DIR/lib/memory.sh"
+source "$BASHOBOT_DIR/lib/commands.sh"
 
 # ============================================================================
 # Provider Loading
@@ -270,7 +259,7 @@ process_message() {
     log_info "Processing message from $source: ${user_message:0:50}..."
 
     # Check if it's a command
-    if [[ "$user_message" == /* ]] && type process_command &>/dev/null; then
+    if [[ "$user_message" == /* ]]; then
         local cmd_output cmd_output_file
         cmd_output_file=$(mktemp)
         process_command "$session_id" "$user_message" > "$cmd_output_file"
@@ -287,46 +276,36 @@ process_message() {
     fi
 
     # Handle pending command approvals (non-slash input only)
-    if type get_pending_approval &>/dev/null; then
-        local pending_cmd
-        pending_cmd=$(get_pending_approval "$session_id")
-        if [[ -n "$pending_cmd" ]]; then
-            local decision
-            decision=$(echo "$user_message" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-            if [[ "$decision" == "yes" ]]; then
-                if type add_command_to_whitelist &>/dev/null; then
-                    add_command_to_whitelist "$pending_cmd"
-                fi
-                clear_pending_approval "$session_id"
-                echo "Approved command: $pending_cmd"
-                return 0
-            fi
+    local pending_cmd
+    pending_cmd=$(get_pending_approval "$session_id")
+    if [[ -n "$pending_cmd" ]]; then
+        local decision
+        decision=$(echo "$user_message" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        if [[ "$decision" == "yes" ]]; then
+            add_command_to_whitelist "$pending_cmd"
             clear_pending_approval "$session_id"
-            echo "Error: command denied: $pending_cmd"
+            echo "Approved command: $pending_cmd"
             return 0
         fi
+        clear_pending_approval "$session_id"
+        echo "Error: command denied: $pending_cmd"
+        return 0
     fi
     
     # Add user message to session
     append_message "$session_id" "user" "$user_message"
     
     # Check if we need to summarize before calling LLM
-    if type check_and_summarize &>/dev/null; then
-        check_and_summarize "$session_id"
-    fi
+    check_and_summarize "$session_id"
     
     # Get conversation history (includes summary if present)
     local messages
-    if type get_messages_for_llm &>/dev/null; then
-        messages=$(get_messages_for_llm "$session_id")
-    else
-        messages=$(get_messages "$session_id")
-    fi
+    messages=$(get_messages_for_llm "$session_id")
     
     # Inject relevant memory context if this is the first message in session
     local msg_count
     msg_count=$(echo "$messages" | jq 'length')
-    if [[ $msg_count -le 2 ]] && type inject_memory_context &>/dev/null; then
+    if [[ $msg_count -le 2 ]]; then
         messages=$(inject_memory_context "$messages" "$user_message")
     fi
     
@@ -345,9 +324,7 @@ process_message() {
     log_info "LLM response received (session=$session_id, source=$source, status=$llm_status, elapsed=${llm_elapsed}s, bytes=${#response})"
     log_info "LLM response raw (session=$session_id): $response"
 
-    if type append_llm_log &>/dev/null; then
-        append_llm_log "$session_id" "$messages" "${LLM_LAST_REQUEST:-}" "${LLM_LAST_RESPONSE:-}" "$llm_status" "$llm_elapsed" "$source"
-    fi
+    append_llm_log "$session_id" "$messages" "${LLM_LAST_REQUEST:-}" "${LLM_LAST_RESPONSE:-}" "$llm_status" "$llm_elapsed" "$source"
     
     if [[ $llm_status -ne 0 ]] || [[ -z "$response" ]]; then
         if [[ -n "$response" ]]; then
@@ -458,11 +435,7 @@ daemon_loop() {
                 # Also send via interface if applicable
                 if [[ "$source" == "telegram" ]]; then
                     log_info "Sending response via interface (session=$session_id, source=$source)"
-                    if type interface_send &>/dev/null; then
-                        interface_send "$session_id" "$response"
-                    else
-                        log_error "interface_send not available for source=$source"
-                    fi
+                    interface_send "$session_id" "$response"
                 fi
             fi
         } 2>/dev/null

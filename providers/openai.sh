@@ -28,7 +28,7 @@ _get_system_prompt() {
         base="You are Bashobot, a helpful personal AI assistant. Be concise and helpful."
     fi
     
-    if [[ "$BASHOBOT_TOOLS_ENABLED" == "true" ]] && type get_tools_definition &>/dev/null; then
+    if [[ "$BASHOBOT_TOOLS_ENABLED" == "true" ]]; then
         echo "$base You have access to tools for executing bash commands and reading/writing files. Use them when appropriate to help the user."
     else
         echo "$base"
@@ -89,7 +89,7 @@ llm_chat() {
     
     # Get tools if available
     local tools="null"
-    if [[ "$BASHOBOT_TOOLS_ENABLED" == "true" ]] && type get_tools_openai &>/dev/null; then
+    if [[ "$BASHOBOT_TOOLS_ENABLED" == "true" ]]; then
         tools=$(get_tools_openai)
     fi
     
@@ -140,11 +140,7 @@ llm_chat() {
                 
                 # Execute the tool
                 local tool_result
-                if type execute_tool &>/dev/null; then
-                    tool_result=$(execute_tool "$tool_name" "$tool_args")
-                else
-                    tool_result='{"error": "Tools not available"}'
-                fi
+                tool_result=$(execute_tool "$tool_name" "$tool_args")
                 
                 local approval_required
                 approval_required=$(echo "$tool_result" | jq -r '.approval_required // empty' 2>/dev/null || true)

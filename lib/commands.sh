@@ -157,16 +157,9 @@ cmd_allowcmd() {
     shift
     local command="$*"
 
-    if ! type add_command_to_whitelist &>/dev/null; then
-        echo "Command whitelist not available."
-        return 0
-    fi
-
     if [[ -z "$command" ]]; then
         # List current whitelist
-        if type ensure_command_whitelist_file &>/dev/null; then
-            ensure_command_whitelist_file
-        fi
+        ensure_command_whitelist_file
         if [[ -s "$BASHOBOT_CMD_WHITELIST_FILE" ]]; then
             echo "Allowed commands:"
             cat "$BASHOBOT_CMD_WHITELIST_FILE"
@@ -179,11 +172,7 @@ cmd_allowcmd() {
     fi
 
     local cmd_name
-    if type extract_command_name &>/dev/null; then
-        cmd_name=$(extract_command_name "$command")
-    else
-        cmd_name=$(echo "$command" | awk '{print $1}')
-    fi
+    cmd_name=$(extract_command_name "$command")
 
     if [[ -z "$cmd_name" ]]; then
         echo "Error: unable to determine command name."
@@ -212,32 +201,16 @@ cmd_memory() {
     
     case "$subcommand" in
         list|ls)
-            if type cmd_memory_list &>/dev/null; then
-                cmd_memory_list "$args"
-            else
-                echo "Memory system not available."
-            fi
+            cmd_memory_list "$args"
             ;;
         save)
-            if type cmd_memory_save &>/dev/null; then
-                cmd_memory_save "$session_id"
-            else
-                echo "Memory system not available."
-            fi
+            cmd_memory_save "$session_id"
             ;;
         search|find)
-            if type cmd_memory_search &>/dev/null; then
-                cmd_memory_search "$args"
-            else
-                echo "Memory system not available."
-            fi
+            cmd_memory_search "$args"
             ;;
         clear)
-            if type cmd_memory_clear &>/dev/null; then
-                cmd_memory_clear
-            else
-                echo "Memory system not available."
-            fi
+            cmd_memory_clear
             ;;
         on|enable)
             export BASHOBOT_MEMORY_ENABLED="true"
@@ -268,12 +241,8 @@ cmd_memory() {
 cmd_context() {
     local session_id="$1"
     
-    if type get_session_stats &>/dev/null; then
-        echo "Session: $session_id"
-        get_session_stats "$session_id"
-    else
-        echo "Session management not available."
-    fi
+    echo "Session: $session_id"
+    get_session_stats "$session_id"
     return 0
 }
 
@@ -285,7 +254,7 @@ cmd_clear() {
     local session_id="$1"
     
     # Save to memory before clearing if memory is enabled
-    if [[ "$BASHOBOT_MEMORY_ENABLED" == "true" ]] && type save_session_to_memory &>/dev/null; then
+    if [[ "$BASHOBOT_MEMORY_ENABLED" == "true" ]]; then
         local saved
         saved=$(save_session_to_memory "$session_id" 2>/dev/null)
         if [[ -n "$saved" ]]; then
@@ -293,16 +262,8 @@ cmd_clear() {
         fi
     fi
     
-    if type clear_session &>/dev/null; then
-        clear_session "$session_id"
-        echo "Conversation cleared. Starting fresh!"
-    else
-        # Fallback if session lib not loaded
-        local session_file
-        session_file=$(get_session_file "$session_id")
-        echo '{"messages":[]}' | jq '.' > "$session_file"
-        echo "Conversation cleared. Starting fresh!"
-    fi
+    clear_session "$session_id"
+    echo "Conversation cleared. Starting fresh!"
     return 0
 }
 
@@ -313,11 +274,7 @@ cmd_clear() {
 cmd_summarize() {
     local session_id="$1"
     
-    if type force_summarize &>/dev/null; then
-        force_summarize "$session_id"
-    else
-        echo "Session summarization not available."
-    fi
+    force_summarize "$session_id"
     return 0
 }
 
