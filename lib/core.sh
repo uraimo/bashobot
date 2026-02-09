@@ -148,6 +148,8 @@ session_append_llm_log() {
     local status="$5"
     local elapsed="$6"
     local source="$7"
+    local error_text="${8:-}"
+    local error_raw="${9:-}"
 
     local session_file
     session_file=$(session_file_path "$session_id")
@@ -173,6 +175,8 @@ session_append_llm_log() {
         --argjson request_messages "$request_messages" \
         --arg provider_request "$provider_request" \
         --arg provider_response "$provider_response" \
+        --arg error_text "$error_text" \
+        --arg error_raw "$error_raw" \
         '{
             timestamp: $ts,
             source: $source,
@@ -182,7 +186,9 @@ session_append_llm_log() {
             elapsed_seconds: $elapsed,
             request_messages: $request_messages,
             provider_request: $provider_request,
-            provider_response: $provider_response
+            provider_response: $provider_response,
+            error_text: $error_text,
+            error_raw: $error_raw
         }')
     json_append_llm_log "$llm_file" "$log_entry"
 }
@@ -341,7 +347,18 @@ llm_run() {
         log_info "event=llm_response_raw session=$session_id payload=$raw_meta"
     fi
 
-    session_append_llm_log "$session_id" "$messages" "$meta_request" "$meta_response" "$llm_status" "$llm_elapsed" "$source"
+    local error_text=""
+    local error_raw=""
+    if [[ $llm_status -ne 0 ]] || [[ -z "$response" ]]; then
+        error_text="$meta_text"
+        if [[ -n "$meta_response" ]]; then
+            error_raw="$meta_response"
+        else
+            error_raw="$raw_meta"
+        fi
+    fi
+
+    session_append_llm_log "$session_id" "$messages" "$meta_request" "$meta_response" "$llm_status" "$llm_elapsed" "$source" "$error_text" "$error_raw"
     LLM_LAST_STATUS="$llm_status"
 
     echo "$response"
