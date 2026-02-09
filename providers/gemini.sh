@@ -57,24 +57,6 @@ _convert_to_gemini_format() {
     }]'
 }
 
-# Build system prompt
-_get_system_prompt() {
-    local base
-    local soul_file="$BASHOBOT_DIR/SOUL.md"
-    
-    if [[ -f "$soul_file" ]]; then
-        base=$(cat "$soul_file")
-    else
-        base="You are Bashobot, a helpful personal AI assistant. Be concise and helpful."
-    fi
-    
-    if [[ "$BASHOBOT_TOOLS_ENABLED" == "true" ]]; then
-        echo "$base You have access to tools for executing bash commands and reading/writing files. Use them when appropriate to help the user."
-    else
-        echo "$base"
-    fi
-}
-
 _gemini_build_request() {
     local contents="$1"
     local tools="$2"
