@@ -226,6 +226,31 @@ process_message() {
 
     # Call LLM provider (function defined in provider script)
     local response
+    response=$(llm_run "$messages" "$session_id" "$source")
+    local llm_status="${LLM_LAST_STATUS:-0}"
+
+    if [[ $llm_status -ne 0 ]] || [[ -z "$response" ]]; then
+        if [[ -n "$response" ]]; then
+            log_error "LLM error (status=$llm_status): $response"
+            response="$response"
+        else
+            response="Sorry, I encountered an error processing your message."
+            log_error "LLM error (status=$llm_status) or empty response"
+        fi
+    fi
+
+    # Add assistant response to session
+    append_message "$session_id" "assistant" "$response"
+
+    echo "$response"
+}
+
+llm_run() {
+    local messages="$1"
+    local session_id="$2"
+    local source="$3"
+
+    local response
     local llm_start llm_end llm_elapsed
     llm_start=$(date +%s)
     log_info "LLM request start (session=$session_id, source=$source)"
@@ -240,19 +265,7 @@ process_message() {
     log_info "LLM response raw (session=$session_id): $response"
 
     append_llm_log "$session_id" "$messages" "${LLM_LAST_REQUEST:-}" "${LLM_LAST_RESPONSE:-}" "$llm_status" "$llm_elapsed" "$source"
-
-    if [[ $llm_status -ne 0 ]] || [[ -z "$response" ]]; then
-        if [[ -n "$response" ]]; then
-            log_error "LLM error (status=$llm_status): $response"
-            response="$response"
-        else
-            response="Sorry, I encountered an error processing your message."
-            log_error "LLM error (status=$llm_status) or empty response"
-        fi
-    fi
-
-    # Add assistant response to session
-    append_message "$session_id" "assistant" "$response"
+    LLM_LAST_STATUS="$llm_status"
 
     echo "$response"
 }
