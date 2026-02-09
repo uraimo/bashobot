@@ -199,9 +199,7 @@ interface_reply() {
     fi
 }
 
-# Backwards-compatible aliases
-interface_start() { interface_receive; }
-interface_send() { interface_reply "$@"; }
+
 
 # Interface info
 interface_info() {

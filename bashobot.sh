@@ -107,10 +107,14 @@ main() {
             ;;
         -cli)
             # Interactive mode that talks to daemon via pipes
-            echo "╔════════════════════════════════════════════╗"
-            echo "║       Bashobot Interactive CLI             ║"
-            echo "║  Type /help for commands, /exit to quit    ║"
-            echo "╚════════════════════════════════════════════╝"
+            echo ""
+            echo ""
+            source "$BASHOBOT_DIR/lib/logo.sh"
+            echo ""
+            echo ""
+            echo -e "\033[1;33mWelcome to Bashobot CLI!\033[0m"
+            echo ""
+            echo -e "Type \033[38;5;202m/help\033[0m for commands, \033[38;5;202m/exit\033[0m to quit"
             echo ""
             local session_id="cli_$$"
             while true; do

@@ -6,7 +6,7 @@
 #
 
 # Start interface - does nothing for dummy
-interface_start() {
+interface_receive() {
     log_info "Dummy interface started (no external connections)"
     
     # Just keep alive, the pipe handling is in main loop
@@ -16,12 +16,13 @@ interface_start() {
 }
 
 # Send message via interface - no-op for dummy
-interface_send() {
+interface_reply() {
     local session_id="$1"
     local message="$2"
     # No external interface to send to
     :
 }
+
 
 # Interface info
 interface_info() {
