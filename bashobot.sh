@@ -56,6 +56,9 @@ init_dirs() {
 
 # Interface (telegram, cli)
 #BASHOBOT_INTERFACE=telegram
+
+# Heartbeat (seconds)
+#BASHOBOT_HEARTBEAT_INTERVAL=30
 EOF
         echo "Created config file: $CONFIG_DIR/config.env"
         echo "Please edit it with your API keys."
@@ -68,6 +71,7 @@ EOF
     # Set defaults AFTER loading config (so env vars take precedence)
     LLM_PROVIDER="${BASHOBOT_LLM:-gemini}"
     INTERFACE="${BASHOBOT_INTERFACE:-telegram}"
+    HEARTBEAT_INTERVAL="${BASHOBOT_HEARTBEAT_INTERVAL:-30}"
 }
 
 init_pipes() {
@@ -256,6 +260,7 @@ daemon_loop() {
     log_info "Starting Bashobot daemon..."
     log_info "LLM Provider: $LLM_PROVIDER"
     log_info "Interface: $INTERFACE"
+    log_info "Heartbeat interval: ${HEARTBEAT_INTERVAL}s"
     
     # Save PID
     echo $$ > "$PID_FILE"
@@ -279,6 +284,31 @@ daemon_loop() {
     # Start interface listener in background (e.g., Telegram polling)
     interface_start &
     local interface_pid=$!
+
+    # Heartbeat loop (optional)
+    if [[ "${HEARTBEAT_INTERVAL:-0}" -gt 0 ]]; then
+        heartbeat_loop() {
+            local heartbeat_message
+            heartbeat_message="Read HEARTBEAT.md if it exists (workspace context). Follow it strictly. Do not infer or repeat old tasks from prior chats. If nothing needs attention, reply HEARTBEAT_OK."
+
+            while true; do
+                sleep "$HEARTBEAT_INTERVAL"
+
+                # Use a dedicated session to avoid polluting user sessions
+                local response
+                response=$(process_message "heartbeat" "$heartbeat_message" "daemon")
+
+                if [[ "$response" != "HEARTBEAT_OK" ]]; then
+                    log_info "Heartbeat response: $response"
+                else
+                    log_debug "Heartbeat OK"
+                fi
+            done
+        }
+
+        heartbeat_loop &
+        local heartbeat_pid=$!
+    fi
     
     # Main loop: listen on named pipe for CLI/programmatic input
     log_info "Listening on pipe: $INPUT_PIPE"
