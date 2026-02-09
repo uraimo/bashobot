@@ -298,7 +298,7 @@ tool_bash() {
         if ! is_command_whitelisted "$cmd_name"; then
             local session_id="${CURRENT_SESSION_ID:-unknown}"
             local prompt
-            prompt="The command $cmd_name is about to be executed for the first time, approve? <yes|no>"
+            prompt="The command \"$command\" is about to be executed for the first time, approve? <yes|no>"
             set_pending_approval "$session_id" "$cmd_name"
             jq -n \
                 --arg prompt "$prompt" \
