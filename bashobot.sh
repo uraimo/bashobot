@@ -286,10 +286,16 @@ process_message() {
     
     # Call LLM provider (function defined in provider script)
     local response
+    local llm_start llm_end llm_elapsed
+    llm_start=$(date +%s)
+    log_info "LLM request start (session=$session_id, source=$source)"
     set +e
     response=$(llm_chat "$messages")
     local llm_status=$?
     set -e
+    llm_end=$(date +%s)
+    llm_elapsed=$((llm_end - llm_start))
+    log_info "LLM response received (session=$session_id, source=$source, status=$llm_status, elapsed=${llm_elapsed}s, bytes=${#response})"
     
     if [[ $llm_status -ne 0 ]] || [[ -z "$response" ]]; then
         if [[ -n "$response" ]]; then
