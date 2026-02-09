@@ -57,8 +57,9 @@ init_dirs() {
 # Interface (telegram, cli)
 #BASHOBOT_INTERFACE=telegram
 
-# Heartbeat (seconds)
-#BASHOBOT_HEARTBEAT_INTERVAL=30
+# Heartbeat
+#BASHOBOT_HEARTBEAT_ENABLED=true
+#BASHOBOT_HEARTBEAT_INTERVAL=300
 
 # Command whitelist
 #BASHOBOT_CMD_WHITELIST_ENABLED=true
@@ -76,7 +77,8 @@ EOF
     # Set defaults AFTER loading config (so env vars take precedence)
     LLM_PROVIDER="${BASHOBOT_LLM:-gemini}"
     INTERFACE="${BASHOBOT_INTERFACE:-telegram}"
-    HEARTBEAT_INTERVAL="${BASHOBOT_HEARTBEAT_INTERVAL:-30}"
+    HEARTBEAT_ENABLED="${BASHOBOT_HEARTBEAT_ENABLED:-true}"
+    HEARTBEAT_INTERVAL="${BASHOBOT_HEARTBEAT_INTERVAL:-300}"
 
     # Load runtime overrides if present (e.g., last /model)
     if [[ -f "$CONFIG_DIR/runtime.env" ]]; then
@@ -327,7 +329,7 @@ daemon_loop() {
     local interface_pid=$!
 
     # Heartbeat loop (optional)
-    if [[ "${HEARTBEAT_INTERVAL:-0}" -gt 0 ]]; then
+    if [[ "${HEARTBEAT_ENABLED:-true}" == "true" ]] && [[ "${HEARTBEAT_INTERVAL:-0}" -gt 0 ]]; then
         heartbeat_loop() {
             local heartbeat_message
             heartbeat_message="Read HEARTBEAT.md if it exists (workspace context). Follow it strictly. Do not infer or repeat old tasks from prior chats. If nothing needs attention, reply HEARTBEAT_OK."
