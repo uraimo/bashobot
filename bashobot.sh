@@ -33,6 +33,8 @@ source "$BASHOBOT_DIR/lib/tools.sh"
 source "$BASHOBOT_DIR/lib/session.sh"
 source "$BASHOBOT_DIR/lib/memory.sh"
 source "$BASHOBOT_DIR/lib/commands.sh"
+source "$BASHOBOT_DIR/lib/config.sh"
+source "$BASHOBOT_DIR/lib/json.sh"
 source "$BASHOBOT_DIR/lib/core.sh"
 
 # ============================================================================

@@ -11,59 +11,7 @@
 
 init_dirs() {
     mkdir -p "$CONFIG_DIR" "$SESSIONS_DIR" "$PIPE_DIR"
-
-    # Create config file if not exists
-    if [[ ! -f "$CONFIG_DIR/config.env" ]]; then
-        cat > "$CONFIG_DIR/config.env" << 'EOF'
-# Bashobot Configuration
-# Uncomment and set your API keys
-
-# LLM Provider (gemini, claude, openai)
-#BASHOBOT_LLM=gemini
-
-# Gemini
-#GEMINI_API_KEY=your_key_here
-
-# Claude
-#ANTHROPIC_API_KEY=your_key_here
-
-# OpenAI
-#OPENAI_API_KEY=your_key_here
-
-# Telegram
-#TELEGRAM_BOT_TOKEN=your_token_here
-#TELEGRAM_ALLOWED_USERS=user_id1,user_id2
-
-# Interface (telegram, cli)
-#BASHOBOT_INTERFACE=telegram
-
-# Heartbeat
-#BASHOBOT_HEARTBEAT_ENABLED=true
-#BASHOBOT_HEARTBEAT_INTERVAL=300
-
-# Command whitelist
-#BASHOBOT_CMD_WHITELIST_ENABLED=true
-# Command whitelist file
-#BASHOBOT_CMD_WHITELIST_FILE=~/.bashobot/command_whitelist
-EOF
-        echo "Created config file: $CONFIG_DIR/config.env"
-        echo "Please edit it with your API keys."
-        exit 1
-    fi
-
-    # Load config
-    source "$CONFIG_DIR/config.env"
-
-    # Set defaults AFTER loading config (so env vars take precedence)
-    LLM_PROVIDER="${BASHOBOT_LLM:-gemini}"
-    INTERFACE="${BASHOBOT_INTERFACE:-telegram}"
-    HEARTBEAT_ENABLED="${BASHOBOT_HEARTBEAT_ENABLED:-true}"
-    HEARTBEAT_INTERVAL="${BASHOBOT_HEARTBEAT_INTERVAL:-300}"
-
-    # Load runtime overrides if present (e.g., last /model)
-    if [[ -f "$CONFIG_DIR/runtime.env" ]]; then
-        source "$CONFIG_DIR/runtime.env"
-    fi
+    config_load
 }
 
 init_pipes() {
@@ -150,19 +98,14 @@ append_message() {
     local content="$3"
     local session_file
     session_file=$(get_session_file "$session_id")
-
-    # Use --arg to properly escape content as a JSON string
-    jq --arg role "$role" --arg content "$content" \
-        '.messages += [{"role": $role, "content": $content}]' \
-        "$session_file" > "${session_file}.tmp" && mv "${session_file}.tmp" "$session_file"
+    json_append_message "$session_file" "$role" "$content"
 }
 
 get_messages() {
     local session_id="$1"
     local session_file
     session_file=$(get_session_file "$session_id")
-
-    jq -c '.messages' "$session_file"
+    json_get_messages "$session_file"
 }
 
 append_llm_log() {
@@ -187,7 +130,8 @@ append_llm_log() {
     local ts
     ts=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
 
-    jq \
+    local log_entry
+    log_entry=$(jq -n \
         --arg ts "$ts" \
         --arg source "$source" \
         --arg provider "$LLM_PROVIDER" \
@@ -197,7 +141,7 @@ append_llm_log() {
         --argjson request_messages "$request_messages" \
         --arg provider_request "$provider_request" \
         --arg provider_response "$provider_response" \
-        '.llm_log = (.llm_log // []) + [{
+        '{
             timestamp: $ts,
             source: $source,
             provider: $provider,
@@ -207,8 +151,8 @@ append_llm_log() {
             request_messages: $request_messages,
             provider_request: $provider_request,
             provider_response: $provider_response
-        }]' \
-        "$session_file" > "${session_file}.tmp" && mv "${session_file}.tmp" "$session_file"
+        }')
+    json_append_llm_log "$session_file" "$log_entry"
 }
 
 # ============================================================================
