@@ -73,6 +73,7 @@ cmd_help() {
     echo "Available commands:"
     echo "  /model [name]  - Show or switch the current model"
     echo "  /tools [on|off]- Show or toggle tool usage"
+    echo "  /allowcmd [c]  - Allow a shell command for tool execution"
     echo "  /memory [cmd]  - Memory system (list|save|search|clear)"
     echo "  /context       - Show session context/token usage"
     echo "  /clear         - Clear conversation history"
@@ -123,6 +124,53 @@ cmd_tools() {
             echo "Usage: /tools on|off"
             ;;
     esac
+    return 0
+}
+
+# ============================================================================
+# Command: /allowcmd [command]
+# Allow a shell command for tool execution
+# ============================================================================
+cmd_allowcmd() {
+    local session_id="$1"
+    shift
+    local command="$*"
+
+    if ! type add_command_to_whitelist &>/dev/null; then
+        echo "Command whitelist not available."
+        return 0
+    fi
+
+    if [[ -z "$command" ]]; then
+        # List current whitelist
+        if type ensure_command_whitelist_file &>/dev/null; then
+            ensure_command_whitelist_file
+        fi
+        if [[ -s "$BASHOBOT_CMD_WHITELIST_FILE" ]]; then
+            echo "Allowed commands:"
+            cat "$BASHOBOT_CMD_WHITELIST_FILE"
+        else
+            echo "No commands have been approved yet."
+        fi
+        echo ""
+        echo "Usage: /allowcmd <command>"
+        return 0
+    fi
+
+    local cmd_name
+    if type extract_command_name &>/dev/null; then
+        cmd_name=$(extract_command_name "$command")
+    else
+        cmd_name=$(echo "$command" | awk '{print $1}')
+    fi
+
+    if [[ -z "$cmd_name" ]]; then
+        echo "Error: unable to determine command name."
+        return 0
+    fi
+
+    add_command_to_whitelist "$cmd_name"
+    echo "Allowed command: $cmd_name"
     return 0
 }
 
@@ -281,6 +329,10 @@ process_command() {
             ;;
         tools)
             cmd_tools "$session_id" $args
+            return $?
+            ;;
+        allowcmd)
+            cmd_allowcmd "$session_id" $args
             return $?
             ;;
         memory)

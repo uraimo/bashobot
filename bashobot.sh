@@ -59,6 +59,9 @@ init_dirs() {
 
 # Heartbeat (seconds)
 #BASHOBOT_HEARTBEAT_INTERVAL=30
+
+# Command whitelist file
+#BASHOBOT_CMD_WHITELIST_FILE=~/.bashobot/command_whitelist
 EOF
         echo "Created config file: $CONFIG_DIR/config.env"
         echo "Please edit it with your API keys."

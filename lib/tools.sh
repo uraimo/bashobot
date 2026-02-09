@@ -22,6 +22,9 @@ BASHOBOT_MAX_OUTPUT="${BASHOBOT_MAX_OUTPUT:-50000}"
 # Bash command timeout (in seconds)
 BASHOBOT_BASH_TIMEOUT="${BASHOBOT_BASH_TIMEOUT:-30}"
 
+# Command whitelist file (one command per line)
+BASHOBOT_CMD_WHITELIST_FILE="${BASHOBOT_CMD_WHITELIST_FILE:-$CONFIG_DIR/command_whitelist}"
+
 # ============================================================================
 # Tool Definitions (for LLM API)
 # ============================================================================
@@ -138,6 +141,50 @@ EOF
 # Security Helpers
 # ============================================================================
 
+ensure_command_whitelist_file() {
+    local whitelist_dir
+    whitelist_dir=$(dirname "$BASHOBOT_CMD_WHITELIST_FILE")
+    mkdir -p "$whitelist_dir"
+    if [[ ! -f "$BASHOBOT_CMD_WHITELIST_FILE" ]]; then
+        touch "$BASHOBOT_CMD_WHITELIST_FILE"
+        chmod 600 "$BASHOBOT_CMD_WHITELIST_FILE" 2>/dev/null || true
+    fi
+}
+
+# Extract the primary command name from a shell command string
+extract_command_name() {
+    local raw="$1"
+    if [[ -z "$raw" ]]; then
+        return 1
+    fi
+
+    # Strip leading whitespace
+    raw=$(echo "$raw" | sed 's/^[[:space:]]*//')
+
+    # Use awk to skip env assignments and sudo
+    echo "$raw" | awk '{
+        for (i = 1; i <= NF; i++) {
+            if ($i ~ /^[A-Za-z_][A-Za-z0-9_]*=.*/) { next }
+            if ($i == "sudo") { continue }
+            print $i; exit
+        }
+    }'
+}
+
+is_command_whitelisted() {
+    local cmd="$1"
+    ensure_command_whitelist_file
+    grep -Fxq "$cmd" "$BASHOBOT_CMD_WHITELIST_FILE"
+}
+
+add_command_to_whitelist() {
+    local cmd="$1"
+    ensure_command_whitelist_file
+    if ! grep -Fxq "$cmd" "$BASHOBOT_CMD_WHITELIST_FILE"; then
+        echo "$cmd" >> "$BASHOBOT_CMD_WHITELIST_FILE"
+    fi
+}
+
 # Resolve path to absolute, expanding ~ and checking allowed dirs
 resolve_path() {
     local input_path="$1"
@@ -199,6 +246,18 @@ tool_bash() {
     
     if [[ -z "$command" ]]; then
         echo '{"error": "No command provided"}'
+        return 1
+    fi
+
+    local cmd_name
+    cmd_name=$(extract_command_name "$command")
+    if [[ -z "$cmd_name" ]]; then
+        echo '{"error": "Unable to determine command name"}'
+        return 1
+    fi
+
+    if ! is_command_whitelisted "$cmd_name"; then
+        echo "{\"error\": \"Command not allowed: $cmd_name. Ask the user to approve with /allowcmd $cmd_name\"}"
         return 1
     fi
     
