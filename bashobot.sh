@@ -292,8 +292,13 @@ process_message() {
     set -e
     
     if [[ $llm_status -ne 0 ]] || [[ -z "$response" ]]; then
-        response="Sorry, I encountered an error processing your message."
-        log_error "LLM error (status=$llm_status) or empty response"
+        if [[ -n "$response" ]]; then
+            log_error "LLM error (status=$llm_status): $response"
+            response="$response"
+        else
+            response="Sorry, I encountered an error processing your message."
+            log_error "LLM error (status=$llm_status) or empty response"
+        fi
     fi
     
     # Add assistant response to session
