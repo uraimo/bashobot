@@ -40,6 +40,20 @@ log_error() { log "ERROR" "$@"; }
 log_debug() { log "DEBUG" "$@"; }
 
 # ============================================================================
+# Helpers
+# ============================================================================
+
+capture_output() {
+    local tmp status
+    tmp=$(mktemp)
+    "$@" > "$tmp"
+    status=$?
+    cat "$tmp"
+    rm -f "$tmp"
+    return $status
+}
+
+# ============================================================================
 # Provider Loading
 # ============================================================================
 
@@ -193,12 +207,9 @@ process_message() {
 
     # Check if it's a command
     if [[ "$user_message" == /* ]]; then
-        local cmd_output cmd_output_file
-        cmd_output_file=$(mktemp)
-        process_command "$session_id" "$user_message" > "$cmd_output_file"
+        local cmd_output
+        cmd_output=$(capture_output process_command "$session_id" "$user_message")
         local cmd_status=$?
-        cmd_output=$(cat "$cmd_output_file")
-        rm -f "$cmd_output_file"
 
         if [[ $cmd_status -eq 0 ]]; then
             # Command handled, return output
@@ -315,11 +326,8 @@ handle_incoming_message() {
 
     init_session "$session_id"
 
-    local response response_file
-    response_file=$(mktemp)
-    process_message "$session_id" "$message" "$source" > "$response_file"
-    response=$(cat "$response_file")
-    rm -f "$response_file"
+    local response
+    response=$(capture_output process_message "$session_id" "$message" "$source")
 
     dispatch_response "$session_id" "$source" "$response"
 }
@@ -364,11 +372,8 @@ daemon_loop() {
 
                 # Use a dedicated session to avoid polluting user sessions
                 init_session "heartbeat"
-                local response response_file
-                response_file=$(mktemp)
-                process_message "heartbeat" "$heartbeat_message" "daemon" > "$response_file"
-                response=$(cat "$response_file")
-                rm -f "$response_file"
+                local response
+                response=$(capture_output process_message "heartbeat" "$heartbeat_message" "daemon")
 
                 if [[ "$response" != "HEARTBEAT_OK" ]]; then
                     log_info "Heartbeat response: $response"
