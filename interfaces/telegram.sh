@@ -134,8 +134,8 @@ _process_update() {
     log_info "event=telegram_queued user_id=$user_id username=$username"
 }
 
-# Start interface - called by daemon
-interface_start() {
+# Receive messages - called by daemon
+interface_receive() {
     log_info "Starting Telegram interface..."
     
     # Verify bot token works
@@ -187,7 +187,7 @@ interface_start() {
 }
 
 # Send message via interface - called when pipe message has telegram source
-interface_send() {
+interface_reply() {
     local session_id="$1"
     local message="$2"
     
@@ -198,6 +198,10 @@ interface_send() {
         _telegram_send_message "$chat_id" "$message"
     fi
 }
+
+# Backwards-compatible aliases
+interface_start() { interface_receive; }
+interface_send() { interface_reply "$@"; }
 
 # Interface info
 interface_info() {

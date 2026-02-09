@@ -360,7 +360,7 @@ dispatch_response() {
 
     if [[ "$source" == "telegram" ]]; then
         log_info "event=interface_send session=$session_id source=$source"
-        interface_send "$session_id" "$response"
+        interface_reply "$session_id" "$response"
     fi
 }
 
@@ -406,7 +406,7 @@ daemon_loop() {
     trap cleanup_daemon SIGTERM SIGINT
 
     # Start interface listener in background (e.g., Telegram polling)
-    interface_start &
+    interface_receive &
     local interface_pid=$!
 
     # Heartbeat loop (optional)
