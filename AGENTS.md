@@ -120,7 +120,6 @@ TELEGRAM_ALLOWED_USERS=123456789  # Comma-separated user IDs (optional)
 
 # Tool security (optional)
 #BASHOBOT_ALLOWED_DIRS=/home/user,/tmp  # Restrict file access
-#BASHOBOT_BASH_TIMEOUT=30               # Command timeout in seconds
 ```
 
 ## Current Slash Commands
@@ -144,7 +143,7 @@ Bashobot supports tool calling for bash execution and file operations. Tools are
 
 | Tool | Description |
 |------|-------------|
-| `bash` | Execute shell commands with timeout |
+| `bash` | Execute shell commands |
 | `read_file` | Read file contents (with offset/limit support) |
 | `write_file` | Write content to files (creates directories) |
 | `list_files` | List directory contents |
@@ -157,13 +156,11 @@ Bashobot supports tool calling for bash execution and file operations. Tools are
 | `BASHOBOT_TOOLS_ENABLED` | `true` | Enable/disable all tools |
 | `BASHOBOT_ALLOWED_DIRS` | (empty) | Comma-separated allowed directories (empty = all) |
 | `BASHOBOT_MAX_OUTPUT` | `50000` | Max bytes of command output |
-| `BASHOBOT_BASH_TIMEOUT` | `30` | Bash command timeout in seconds |
 
 ### Security
 
 - Set `BASHOBOT_TOOLS_ENABLED=false` to disable all tools
 - Use `BASHOBOT_ALLOWED_DIRS` to restrict file access to specific directories
-- Commands run with a timeout to prevent hangs
 - Output is truncated to prevent memory issues
 
 ### Key Functions (lib/tools.sh)

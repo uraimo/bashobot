@@ -19,9 +19,6 @@ BASHOBOT_ALLOWED_DIRS="${BASHOBOT_ALLOWED_DIRS:-}"
 # Maximum output size for bash commands (in bytes)
 BASHOBOT_MAX_OUTPUT="${BASHOBOT_MAX_OUTPUT:-50000}"
 
-# Bash command timeout (in seconds)
-BASHOBOT_BASH_TIMEOUT="${BASHOBOT_BASH_TIMEOUT:-30}"
-
 # Enable/disable command whitelist (default: enabled)
 BASHOBOT_CMD_WHITELIST_ENABLED="${BASHOBOT_CMD_WHITELIST_ENABLED:-true}"
 
@@ -47,7 +44,7 @@ get_tools_definition() {
 [
   {
     "name": "bash",
-    "description": "Execute a bash command and return the output. Use this to run shell commands, scripts, or system utilities. The command runs in a bash shell with a timeout. Be careful with destructive commands.",
+    "description": "Execute a bash command and return the output. Use this to run shell commands, scripts, or system utilities. Be careful with destructive commands.",
     "parameters": {
       "type": "object",
       "properties": {
@@ -318,9 +315,9 @@ tool_bash() {
         return 1
     fi
     
-    # Execute command with timeout
+    # Execute command without timeout
     local output exit_code
-    output=$(cd "$working_dir" && timeout "$BASHOBOT_BASH_TIMEOUT" bash -c "$command" 2>&1)
+    output=$(cd "$working_dir" && bash -c "$command" 2>&1)
     exit_code=$?
     
     # Truncate if too long
