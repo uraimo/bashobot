@@ -42,12 +42,7 @@ cmd_model() {
             source "$BASHOBOT_DIR/providers/gemini.sh" 2>/dev/null
             echo "Switched to Gemini model: $model_name"
             echo "Current model: ${GEMINI_MODEL}"
-            if [[ -n "${CONFIG_DIR:-}" ]]; then
-                {
-                    echo "LLM_PROVIDER=gemini"
-                    echo "GEMINI_MODEL=${GEMINI_MODEL}"
-                } > "$CONFIG_DIR/runtime.env"
-            fi
+            config_write_runtime "gemini" "$GEMINI_MODEL"
             ;;
         claude-*|anthropic-*)
             export CLAUDE_MODEL="$model_name"
@@ -55,12 +50,7 @@ cmd_model() {
             source "$BASHOBOT_DIR/providers/claude.sh" 2>/dev/null
             echo "Switched to Claude model: $model_name"
             echo "Current model: ${CLAUDE_MODEL}"
-            if [[ -n "${CONFIG_DIR:-}" ]]; then
-                {
-                    echo "LLM_PROVIDER=claude"
-                    echo "CLAUDE_MODEL=${CLAUDE_MODEL}"
-                } > "$CONFIG_DIR/runtime.env"
-            fi
+            config_write_runtime "claude" "$CLAUDE_MODEL"
             ;;
         gpt-*|o1-*|o3-*)
             export OPENAI_MODEL="$model_name"
@@ -68,12 +58,7 @@ cmd_model() {
             source "$BASHOBOT_DIR/providers/openai.sh" 2>/dev/null
             echo "Switched to OpenAI model: $model_name"
             echo "Current model: ${OPENAI_MODEL}"
-            if [[ -n "${CONFIG_DIR:-}" ]]; then
-                {
-                    echo "LLM_PROVIDER=openai"
-                    echo "OPENAI_MODEL=${OPENAI_MODEL}"
-                } > "$CONFIG_DIR/runtime.env"
-            fi
+            config_write_runtime "openai" "$OPENAI_MODEL"
             ;;
         *)
             echo "Unknown model: $model_name"
