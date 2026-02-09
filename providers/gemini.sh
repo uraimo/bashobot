@@ -146,6 +146,15 @@ llm_chat() {
                 tool_result='{"error": "Tools not available"}'
             fi
             
+            local approval_required
+            approval_required=$(echo "$tool_result" | jq -r '.approval_required // empty' 2>/dev/null || true)
+            if [[ "$approval_required" == "true" ]]; then
+                local prompt
+                prompt=$(echo "$tool_result" | jq -r '.prompt // .error // "Approval required"' 2>/dev/null)
+                echo "$prompt"
+                return 0
+            fi
+
             log_info "Tool result: ${tool_result:0:200}..."
             
             # Add the function call and result to contents for next iteration

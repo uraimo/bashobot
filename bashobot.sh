@@ -60,6 +60,8 @@ init_dirs() {
 # Heartbeat (seconds)
 #BASHOBOT_HEARTBEAT_INTERVAL=30
 
+# Command whitelist
+#BASHOBOT_CMD_WHITELIST_ENABLED=true
 # Command whitelist file
 #BASHOBOT_CMD_WHITELIST_FILE=~/.bashobot/command_whitelist
 EOF
@@ -204,8 +206,31 @@ process_message() {
     local session_id="$1"
     local user_message="$2"
     local source="${3:-cli}"  # cli, telegram, pipe
+
+    CURRENT_SESSION_ID="$session_id"
     
     log_info "Processing message from $source: ${user_message:0:50}..."
+
+    # Handle pending command approvals
+    if type get_pending_approval &>/dev/null; then
+        local pending_cmd
+        pending_cmd=$(get_pending_approval "$session_id")
+        if [[ -n "$pending_cmd" ]]; then
+            local decision
+            decision=$(echo "$user_message" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            if [[ "$decision" == "yes" ]]; then
+                if type add_command_to_whitelist &>/dev/null; then
+                    add_command_to_whitelist "$pending_cmd"
+                fi
+                clear_pending_approval "$session_id"
+                echo "Approved command: $pending_cmd"
+                return 0
+            fi
+            clear_pending_approval "$session_id"
+            echo "Error: command denied: $pending_cmd"
+            return 0
+        fi
+    fi
     
     # Check if it's a command
     if [[ "$user_message" == /* ]] && type process_command &>/dev/null; then

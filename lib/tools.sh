@@ -22,8 +22,14 @@ BASHOBOT_MAX_OUTPUT="${BASHOBOT_MAX_OUTPUT:-50000}"
 # Bash command timeout (in seconds)
 BASHOBOT_BASH_TIMEOUT="${BASHOBOT_BASH_TIMEOUT:-30}"
 
+# Enable/disable command whitelist (default: enabled)
+BASHOBOT_CMD_WHITELIST_ENABLED="${BASHOBOT_CMD_WHITELIST_ENABLED:-true}"
+
 # Command whitelist file (one command per line)
 BASHOBOT_CMD_WHITELIST_FILE="${BASHOBOT_CMD_WHITELIST_FILE:-$CONFIG_DIR/command_whitelist}"
+
+# Pending approval storage
+BASHOBOT_CMD_APPROVAL_DIR="${BASHOBOT_CMD_APPROVAL_DIR:-$CONFIG_DIR/cmd_approvals}"
 
 # ============================================================================
 # Tool Definitions (for LLM API)
@@ -151,6 +157,36 @@ ensure_command_whitelist_file() {
     fi
 }
 
+# Sanitize id for filesystem usage
+sanitize_id() {
+    echo "$1" | sed 's/[^A-Za-z0-9._-]/_/g'
+}
+
+set_pending_approval() {
+    local session_id="$1"
+    local cmd="$2"
+    local safe_id
+    safe_id=$(sanitize_id "$session_id")
+    mkdir -p "$BASHOBOT_CMD_APPROVAL_DIR"
+    printf '%s' "$cmd" > "$BASHOBOT_CMD_APPROVAL_DIR/$safe_id"
+}
+
+get_pending_approval() {
+    local session_id="$1"
+    local safe_id
+    safe_id=$(sanitize_id "$session_id")
+    if [[ -f "$BASHOBOT_CMD_APPROVAL_DIR/$safe_id" ]]; then
+        cat "$BASHOBOT_CMD_APPROVAL_DIR/$safe_id"
+    fi
+}
+
+clear_pending_approval() {
+    local session_id="$1"
+    local safe_id
+    safe_id=$(sanitize_id "$session_id")
+    rm -f "$BASHOBOT_CMD_APPROVAL_DIR/$safe_id"
+}
+
 # Extract the primary command name from a shell command string
 extract_command_name() {
     local raw="$1"
@@ -248,17 +284,28 @@ tool_bash() {
         echo '{"error": "No command provided"}'
         return 1
     fi
+    
+    if [[ "$BASHOBOT_CMD_WHITELIST_ENABLED" != "true" ]]; then
+        log_info "Command whitelist disabled"
+    else
+        local cmd_name
+        cmd_name=$(extract_command_name "$command")
+        if [[ -z "$cmd_name" ]]; then
+            echo '{"error": "Unable to determine command name"}'
+            return 1
+        fi
 
-    local cmd_name
-    cmd_name=$(extract_command_name "$command")
-    if [[ -z "$cmd_name" ]]; then
-        echo '{"error": "Unable to determine command name"}'
-        return 1
-    fi
-
-    if ! is_command_whitelisted "$cmd_name"; then
-        echo "{\"error\": \"Command not allowed: $cmd_name. Ask the user to approve with /allowcmd $cmd_name\"}"
-        return 1
+        if ! is_command_whitelisted "$cmd_name"; then
+            local session_id="${CURRENT_SESSION_ID:-unknown}"
+            local prompt
+            prompt="The command $cmd_name is about to be executed for the first time, approve? <yes|no>"
+            set_pending_approval "$session_id" "$cmd_name"
+            jq -n \
+                --arg prompt "$prompt" \
+                --arg cmd "$cmd_name" \
+                '{error: $prompt, approval_required: true, command: $cmd, prompt: $prompt}'
+            return 1
+        fi
     fi
     
     log_info "Tool bash: $command"
