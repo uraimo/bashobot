@@ -180,7 +180,7 @@ init_session() {
     session_file=$(get_session_file "$session_id")
     
     if [[ ! -f "$session_file" ]]; then
-        echo '{"messages":[]}' | jq '.' > "$session_file"
+        echo '{"messages":[],"llm_log":[]}' | jq '.' > "$session_file"
     fi
 }
 
@@ -203,6 +203,52 @@ get_messages() {
     session_file=$(get_session_file "$session_id")
     
     jq -c '.messages' "$session_file"
+}
+
+append_llm_log() {
+    local session_id="$1"
+    local request_messages="$2"
+    local provider_request="$3"
+    local provider_response="$4"
+    local status="$5"
+    local elapsed="$6"
+    local source="$7"
+
+    local session_file
+    session_file=$(get_session_file "$session_id")
+
+    local model_name="unknown"
+    case "$LLM_PROVIDER" in
+        gemini) model_name="${GEMINI_MODEL:-unknown}" ;;
+        claude) model_name="${CLAUDE_MODEL:-unknown}" ;;
+        openai) model_name="${OPENAI_MODEL:-unknown}" ;;
+    esac
+
+    local ts
+    ts=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+
+    jq \
+        --arg ts "$ts" \
+        --arg source "$source" \
+        --arg provider "$LLM_PROVIDER" \
+        --arg model "$model_name" \
+        --argjson status "$status" \
+        --argjson elapsed "$elapsed" \
+        --argjson request_messages "$request_messages" \
+        --arg provider_request "$provider_request" \
+        --arg provider_response "$provider_response" \
+        '.llm_log = (.llm_log // []) + [{
+            timestamp: $ts,
+            source: $source,
+            provider: $provider,
+            model: $model,
+            status: $status,
+            elapsed_seconds: $elapsed,
+            request_messages: $request_messages,
+            provider_request: $provider_request,
+            provider_response: $provider_response
+        }]' \
+        "$session_file" > "${session_file}.tmp" && mv "${session_file}.tmp" "$session_file"
 }
 
 # ============================================================================
@@ -289,6 +335,7 @@ process_message() {
     local llm_start llm_end llm_elapsed
     llm_start=$(date +%s)
     log_info "LLM request start (session=$session_id, source=$source)"
+    log_info "LLM request messages (session=$session_id): $(echo "$messages" | jq -c '.')"
     set +e
     response=$(llm_chat "$messages")
     local llm_status=$?
@@ -296,6 +343,11 @@ process_message() {
     llm_end=$(date +%s)
     llm_elapsed=$((llm_end - llm_start))
     log_info "LLM response received (session=$session_id, source=$source, status=$llm_status, elapsed=${llm_elapsed}s, bytes=${#response})"
+    log_info "LLM response raw (session=$session_id): $response"
+
+    if type append_llm_log &>/dev/null; then
+        append_llm_log "$session_id" "$messages" "${LLM_LAST_REQUEST:-}" "${LLM_LAST_RESPONSE:-}" "$llm_status" "$llm_elapsed" "$source"
+    fi
     
     if [[ $llm_status -ne 0 ]] || [[ -z "$response" ]]; then
         if [[ -n "$response" ]]; then
@@ -386,6 +438,7 @@ daemon_loop() {
                 message=$(echo "$line" | cut -d'|' -f3-)
                 
                 [[ -z "$message" ]] && continue
+                log_info "Received pipe message (session=$session_id, source=$source, bytes=${#message})"
                 
                 init_session "$session_id"
                 
@@ -395,14 +448,21 @@ daemon_loop() {
                 response=$(cat "$response_file")
                 rm -f "$response_file"
                 
-                # Write response to output pipe (base64 encode to handle newlines)
-                local encoded_response
-                encoded_response=$(echo "$response" | base64)
-                echo "${session_id}|${encoded_response}" > "$OUTPUT_PIPE"
+                # Write response to output pipe only for pipe/cli sources
+                if [[ "$source" == "pipe" ]] || [[ "$source" == "cli" ]]; then
+                    local encoded_response
+                    encoded_response=$(echo "$response" | base64)
+                    echo "${session_id}|${encoded_response}" > "$OUTPUT_PIPE"
+                fi
                 
                 # Also send via interface if applicable
                 if [[ "$source" == "telegram" ]]; then
-                    interface_send "$session_id" "$response"
+                    log_info "Sending response via interface (session=$session_id, source=$source)"
+                    if type interface_send &>/dev/null; then
+                        interface_send "$session_id" "$response"
+                    else
+                        log_error "interface_send not available for source=$source"
+                    fi
                 fi
             fi
         } 2>/dev/null
@@ -416,6 +476,7 @@ daemon_loop() {
 send_message() {
     local message="$1"
     local session_id="${2:-pipe_client}"
+    local source="${3:-pipe}"
     
     # Check if daemon is running
     if [[ ! -f "$PID_FILE" ]] || ! kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
@@ -425,7 +486,7 @@ send_message() {
     fi
     
     # Send message via pipe
-    echo "${session_id}|pipe|${message}" > "$INPUT_PIPE"
+    echo "${session_id}|${source}|${message}" > "$INPUT_PIPE"
     
     # Wait for response
     local response
@@ -440,6 +501,15 @@ send_message() {
             break
         fi
     done
+}
+
+# Enqueue a message to daemon without waiting for a response
+enqueue_message() {
+    local message="$1"
+    local session_id="${2:-pipe_client}"
+    local source="${3:-pipe}"
+    
+    echo "${session_id}|${source}|${message}" > "$INPUT_PIPE"
 }
 
 # ============================================================================

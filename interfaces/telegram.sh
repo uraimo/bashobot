@@ -55,10 +55,18 @@ _telegram_send_message() {
         local escaped_chunk
         escaped_chunk=$(echo -n "$chunk" | jq -Rs '.')
         
-        curl -s -X POST "${TELEGRAM_API}/sendMessage" \
+        local result
+        result=$(curl -s -X POST "${TELEGRAM_API}/sendMessage" \
             -H "Content-Type: application/json" \
             -d "{\"chat_id\": $chat_id, \"text\": $escaped_chunk}" \
-            --max-time 10 > /dev/null
+            --max-time 10)
+        local ok
+        ok=$(echo "$result" | jq -r '.ok // false')
+        if [[ "$ok" != "true" ]]; then
+            log_error "Telegram sendMessage failed: $result"
+        else
+            log_info "Telegram sendMessage ok (chat_id=$chat_id, bytes=${#chunk})"
+        fi
     done
 }
 
@@ -119,19 +127,11 @@ _process_update() {
     
     # Use chat_id as session_id for conversation persistence
     local session_id="telegram_${chat_id}"
-    init_session "$session_id"
     
-    # Process message
-    local response response_file
-    response_file=$(mktemp)
-    process_message "$session_id" "$text" "telegram" > "$response_file"
-    response=$(cat "$response_file")
-    rm -f "$response_file"
+    # Enqueue message to daemon; daemon will reply via interface_send
+    enqueue_message "$text" "$session_id" "telegram"
     
-    # Send response
-    _telegram_send_message "$chat_id" "$response"
-    
-    log_info "Replied to $username"
+    log_info "Queued message for $username"
 }
 
 # Start interface - called by daemon
