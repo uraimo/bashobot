@@ -82,22 +82,40 @@ get_session_file() {
     echo "$SESSIONS_DIR/${session_id}.json"
 }
 
+get_session_llm_file() {
+    local session_id="${1:-default}"
+    echo "$SESSIONS_DIR/${session_id}.llm.json"
+}
+
+ensure_llm_log_file() {
+    local session_id="$1"
+    local llm_file
+    llm_file=$(get_session_llm_file "$session_id")
+
+    if [[ ! -f "$llm_file" ]]; then
+        echo '{"llm_log":[]}' | jq '.' > "$llm_file"
+    fi
+}
+
 init_session() {
     local session_id="${1:-default}"
     local session_file
     session_file=$(get_session_file "$session_id")
-
+    
     if [[ ! -f "$session_file" ]]; then
-        echo '{"messages":[],"llm_log":[]}' | jq '.' > "$session_file"
+        echo '{"messages":[]}' | jq '.' > "$session_file"
     fi
+
+    ensure_llm_log_file "$session_id"
 }
 
 append_message() {
     local session_id="$1"
     local role="$2"
     local content="$3"
-    local session_file
-    session_file=$(get_session_file "$session_id")
+    local llm_file
+    llm_file=$(get_session_llm_file "$session_id")
+    ensure_llm_log_file "$session_id"
     json_append_message "$session_file" "$role" "$content"
 }
 
@@ -152,7 +170,7 @@ append_llm_log() {
             provider_request: $provider_request,
             provider_response: $provider_response
         }')
-    json_append_llm_log "$session_file" "$log_entry"
+    json_append_llm_log "$llm_file" "$log_entry"
 }
 
 # ============================================================================
