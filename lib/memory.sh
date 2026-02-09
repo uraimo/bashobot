@@ -152,7 +152,7 @@ save_to_memory() {
 save_session_to_memory() {
     local session_id="$1"
     local session_file
-    session_file=$(get_session_file "$session_id")
+    session_file=$(session_file_path "$session_id")
     
     if [[ ! -f "$session_file" ]]; then
         return 1

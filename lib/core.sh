@@ -91,56 +91,56 @@ load_interface() {
 # Session Management
 # ============================================================================
 
-get_session_file() {
+session_file_path() {
     local session_id="${1:-default}"
     echo "$SESSIONS_DIR/${session_id}.json"
 }
 
-get_session_llm_file() {
+session_llm_file_path() {
     local session_id="${1:-default}"
     echo "$SESSIONS_DIR/${session_id}.llm.json"
 }
 
-ensure_llm_log_file() {
+session_ensure_llm_log() {
     local session_id="$1"
     local llm_file
-    llm_file=$(get_session_llm_file "$session_id")
+    llm_file=$(session_llm_file_path "$session_id")
 
     if [[ ! -f "$llm_file" ]]; then
         echo '{"llm_log":[]}' | jq '.' > "$llm_file"
     fi
 }
 
-init_session() {
+session_init() {
     local session_id="${1:-default}"
     local session_file
-    session_file=$(get_session_file "$session_id")
+    session_file=$(session_file_path "$session_id")
     
     if [[ ! -f "$session_file" ]]; then
         echo '{"messages":[]}' | jq '.' > "$session_file"
     fi
 
-    ensure_llm_log_file "$session_id"
+    session_ensure_llm_log "$session_id"
 }
 
-append_message() {
+session_append_message() {
     local session_id="$1"
     local role="$2"
     local content="$3"
-    local llm_file
-    llm_file=$(get_session_llm_file "$session_id")
-    ensure_llm_log_file "$session_id"
+    local session_file
+    session_file=$(session_file_path "$session_id")
     json_append_message "$session_file" "$role" "$content"
 }
 
-get_messages() {
+session_get_messages() {
     local session_id="$1"
-    local session_file
-    session_file=$(get_session_file "$session_id")
+    local llm_file
+    llm_file=$(session_llm_file_path "$session_id")
+    session_ensure_llm_log "$session_id"
     json_get_messages "$session_file"
 }
 
-append_llm_log() {
+session_append_llm_log() {
     local session_id="$1"
     local request_messages="$2"
     local provider_request="$3"
@@ -150,7 +150,7 @@ append_llm_log() {
     local source="$7"
 
     local session_file
-    session_file=$(get_session_file "$session_id")
+    session_file=$(session_file_path "$session_id")
 
     local model_name="unknown"
     case "$LLM_PROVIDER" in
@@ -237,7 +237,7 @@ process_message() {
     fi
 
     # Add user message to session
-    append_message "$session_id" "user" "$user_message"
+    session_append_message "$session_id" "user" "$user_message"
 
     # Check if we need to summarize before calling LLM
     check_and_summarize "$session_id"
@@ -269,7 +269,7 @@ process_message() {
     fi
 
     # Add assistant response to session
-    append_message "$session_id" "assistant" "$response"
+    session_append_message "$session_id" "assistant" "$response"
 
     echo "$response"
 }
@@ -311,7 +311,7 @@ llm_run() {
         log_info "event=llm_response_raw session=$session_id payload=$raw_meta"
     fi
 
-    append_llm_log "$session_id" "$messages" "$meta_request" "$meta_response" "$llm_status" "$llm_elapsed" "$source"
+    session_append_llm_log "$session_id" "$messages" "$meta_request" "$meta_response" "$llm_status" "$llm_elapsed" "$source"
     LLM_LAST_STATUS="$llm_status"
 
     echo "$response"
@@ -342,7 +342,7 @@ handle_incoming_message() {
     [[ -z "$message" ]] && return 0
     log_info "event=message_received session=$session_id source=$source bytes=${#message}"
 
-    init_session "$session_id"
+    session_init "$session_id"
 
     local response
     response=$(capture_output process_message "$session_id" "$message" "$source")
@@ -389,7 +389,7 @@ daemon_loop() {
                 sleep "$HEARTBEAT_INTERVAL"
 
                 # Use a dedicated session to avoid polluting user sessions
-                init_session "heartbeat"
+                session_init "heartbeat"
                 local response
                 response=$(capture_output process_message "heartbeat" "$heartbeat_message" "daemon")
 

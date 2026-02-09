@@ -80,7 +80,7 @@ cmd_mycommand() {
 | `daemon_loop()` | Main daemon loop, listens on pipes |
 | `process_message()` | Routes messages to commands or LLM |
 | `send_message()` | Client-side: sends to daemon via pipe |
-| `init_session()` / `append_message()` / `get_messages()` | Session management |
+| `session_init()` / `session_append_message()` / `session_get_messages()` | Session management |
 | `load_provider()` / `load_interface()` | Dynamic loading |
 | `stop_daemon()` | Kills daemon and all children |
 

@@ -65,7 +65,7 @@ estimate_messages_tokens() {
 get_messages_for_llm() {
     local session_id="$1"
     local session_file
-    session_file=$(get_session_file "$session_id")
+    session_file=$(session_file_path "$session_id")
     
     local has_summary
     has_summary=$(jq -r '.summary // empty' "$session_file")
@@ -88,7 +88,7 @@ get_messages_for_llm() {
 get_raw_messages() {
     local session_id="$1"
     local session_file
-    session_file=$(get_session_file "$session_id")
+    session_file=$(session_file_path "$session_id")
     jq -c '.messages' "$session_file"
 }
 
@@ -96,7 +96,7 @@ get_raw_messages() {
 get_session_stats() {
     local session_id="$1"
     local session_file
-    session_file=$(get_session_file "$session_id")
+    session_file=$(session_file_path "$session_id")
     
     local message_count summary_count total_tokens has_summary
     message_count=$(jq '.messages | length' "$session_file")
@@ -145,7 +145,7 @@ generate_summary() {
 check_and_summarize() {
     local session_id="$1"
     local session_file
-    session_file=$(get_session_file "$session_id")
+    session_file=$(session_file_path "$session_id")
     
     # Get current messages for LLM (includes any existing summary)
     local messages
@@ -259,7 +259,7 @@ check_and_summarize() {
 clear_session() {
     local session_id="$1"
     local session_file
-    session_file=$(get_session_file "$session_id")
+    session_file=$(session_file_path "$session_id")
     
     echo '{"messages":[]}' | jq '.' > "$session_file"
     log_info "Cleared session: $session_id"
@@ -269,7 +269,7 @@ clear_session() {
 force_summarize() {
     local session_id="$1"
     local session_file
-    session_file=$(get_session_file "$session_id")
+    session_file=$(session_file_path "$session_id")
     
     local raw_messages
     raw_messages=$(get_raw_messages "$session_id")
