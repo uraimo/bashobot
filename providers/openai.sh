@@ -70,11 +70,15 @@ _openai_api_call() {
             }')
     fi
     
-    curl -s -X POST "$OPENAI_API_URL" \
+    LLM_LAST_REQUEST="$request_body"
+    local response
+    response=$(curl -s -X POST "$OPENAI_API_URL" \
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer $OPENAI_API_KEY" \
         -d "$request_body" \
-        --max-time 120
+        --max-time 120)
+    LLM_LAST_RESPONSE="$response"
+    echo "$response"
 }
 
 # Main chat function - called by bashobot core

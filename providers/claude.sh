@@ -67,12 +67,16 @@ _claude_api_call() {
             }')
     fi
     
-    curl -s -X POST "$CLAUDE_API_URL" \
+    LLM_LAST_REQUEST="$request_body"
+    local response
+    response=$(curl -s -X POST "$CLAUDE_API_URL" \
         -H "Content-Type: application/json" \
         -H "x-api-key: $ANTHROPIC_API_KEY" \
         -H "anthropic-version: 2023-06-01" \
         -d "$request_body" \
-        --max-time 120
+        --max-time 120)
+    LLM_LAST_RESPONSE="$response"
+    echo "$response"
 }
 
 # Main chat function - called by bashobot core

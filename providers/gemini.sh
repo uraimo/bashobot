@@ -86,11 +86,15 @@ _gemini_api_call() {
             }')
     fi
     
-    curl -s -X POST \
+    LLM_LAST_REQUEST="$request_body"
+    local response
+    response=$(curl -s -X POST \
         "${GEMINI_API_URL}/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}" \
         -H "Content-Type: application/json" \
         -d "$request_body" \
-        --max-time 120
+        --max-time 120)
+    LLM_LAST_RESPONSE="$response"
+    echo "$response"
 }
 
 # Main chat function - called by bashobot core
