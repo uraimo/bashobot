@@ -35,8 +35,7 @@ _get_system_prompt() {
     fi
 }
 
-# Make a single API call to Claude
-_claude_api_call() {
+_claude_build_request() {
     local messages="$1"
     local tools="$2"
     
@@ -66,7 +65,12 @@ _claude_api_call() {
                 messages: $messages
             }')
     fi
-    
+    echo "$request_body"
+}
+
+_claude_send_request() {
+    local request_body="$1"
+
     LLM_LAST_REQUEST="$request_body"
     local response
     response=$(curl -s -X POST "$CLAUDE_API_URL" \
@@ -77,6 +81,16 @@ _claude_api_call() {
         --max-time 120)
     LLM_LAST_RESPONSE="$response"
     echo "$response"
+}
+
+# Make a single API call to Claude
+_claude_api_call() {
+    local messages="$1"
+    local tools="$2"
+
+    local request_body
+    request_body=$(_claude_build_request "$messages" "$tools")
+    _claude_send_request "$request_body"
 }
 
 # Main chat function - called by bashobot core

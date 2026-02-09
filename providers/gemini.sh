@@ -48,8 +48,7 @@ _get_system_prompt() {
     fi
 }
 
-# Make a single API call to Gemini
-_gemini_api_call() {
+_gemini_build_request() {
     local contents="$1"
     local tools="$2"
     
@@ -85,7 +84,12 @@ _gemini_api_call() {
                 }
             }')
     fi
-    
+    echo "$request_body"
+}
+
+_gemini_send_request() {
+    local request_body="$1"
+
     LLM_LAST_REQUEST="$request_body"
     local response
     response=$(curl -s -X POST \
@@ -95,6 +99,16 @@ _gemini_api_call() {
         --max-time 120)
     LLM_LAST_RESPONSE="$response"
     echo "$response"
+}
+
+# Make a single API call to Gemini
+_gemini_api_call() {
+    local contents="$1"
+    local tools="$2"
+
+    local request_body
+    request_body=$(_gemini_build_request "$contents" "$tools")
+    _gemini_send_request "$request_body"
 }
 
 # Main chat function - called by bashobot core
