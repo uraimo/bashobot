@@ -17,6 +17,32 @@ if [[ -z "${OPENAI_API_KEY:-}" ]]; then
     exit 1
 fi
 
+models_list() {
+    local code body
+    read -r code body < <(_models_http_get "https://api.openai.com/v1/models" \
+        -H "Authorization: Bearer $OPENAI_API_KEY")
+
+    if [[ "$code" != "200" ]]; then
+        local err
+        err=$(echo "$body" | jq -r '.error.message // empty' 2>/dev/null || true)
+        echo "OpenAI: failed to list models (HTTP $code)${err:+: $err}"
+        return 0
+    fi
+
+    local models
+    models=$(echo "$body" | jq -r '.data[].id' 2>/dev/null | sort -u)
+    if [[ -z "$models" ]]; then
+        echo "OpenAI: no models found"
+        return 0
+    fi
+
+    echo "OpenAI models:"
+    while IFS= read -r m; do
+        [[ -z "$m" ]] && continue
+        echo "  - $m"
+    done <<< "$models"
+}
+
 # Build system prompt
 _get_system_prompt() {
     local base

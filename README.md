@@ -44,6 +44,7 @@ BASHOBOT_INTERFACE=none ./bashobot.sh -daemon
 |---------|-------------|
 | `/help` | Show available commands |
 | `/model [name]` | Show or switch model |
+| `/models` | List available models for current provider |
 | `/tools [on|off]` | Show or toggle tool usage |
 | `/allowcmd [cmd]` | Allow a shell command for tool execution |
 | `/memory [cmd]` | Memory system (list, save, search, clear, on/off) |

@@ -17,6 +17,33 @@ if [[ -z "${ANTHROPIC_API_KEY:-}" ]]; then
     exit 1
 fi
 
+models_list() {
+    local code body
+    read -r code body < <(_models_http_get "https://api.anthropic.com/v1/models" \
+        -H "x-api-key: $ANTHROPIC_API_KEY" \
+        -H "anthropic-version: 2023-06-01")
+
+    if [[ "$code" != "200" ]]; then
+        local err
+        err=$(echo "$body" | jq -r '.error.message // empty' 2>/dev/null || true)
+        echo "Claude: failed to list models (HTTP $code)${err:+: $err}"
+        return 0
+    fi
+
+    local models
+    models=$(echo "$body" | jq -r '.data[].id // .models[].id // empty' 2>/dev/null | sort -u)
+    if [[ -z "$models" ]]; then
+        echo "Claude: no models found"
+        return 0
+    fi
+
+    echo "Claude models:"
+    while IFS= read -r m; do
+        [[ -z "$m" ]] && continue
+        echo "  - $m"
+    done <<< "$models"
+}
+
 # Build system prompt
 _get_system_prompt() {
     local base

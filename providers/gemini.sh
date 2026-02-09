@@ -17,6 +17,31 @@ if [[ -z "${GEMINI_API_KEY:-}" ]]; then
     exit 1
 fi
 
+models_list() {
+    local code body
+    read -r code body < <(_models_http_get "https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}")
+
+    if [[ "$code" != "200" ]]; then
+        local err
+        err=$(echo "$body" | jq -r '.error.message // empty' 2>/dev/null || true)
+        echo "Gemini: failed to list models (HTTP $code)${err:+: $err}"
+        return 0
+    fi
+
+    local models
+    models=$(echo "$body" | jq -r '.models[].name' 2>/dev/null | sed 's|^models/||' | sort -u)
+    if [[ -z "$models" ]]; then
+        echo "Gemini: no models found"
+        return 0
+    fi
+
+    echo "Gemini models:"
+    while IFS= read -r m; do
+        [[ -z "$m" ]] && continue
+        echo "  - $m"
+    done <<< "$models"
+}
+
 # Convert our message format to Gemini format
 # Input: [{"role":"user","content":"..."},{"role":"assistant","content":"..."}]
 # Output: Gemini contents array

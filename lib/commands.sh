@@ -71,6 +71,31 @@ cmd_model() {
 }
 
 # ============================================================================
+# Command: /models [provider]
+# List available models from providers
+# ============================================================================
+_models_http_get() {
+    local url="$1"
+    shift
+    local response body code
+    response=$(curl -s -w "\n%{http_code}" "$url" "$@")
+    body=$(printf "%s" "$response" | sed '$d')
+    code=$(printf "%s" "$response" | tail -n1)
+    printf "%s\n%s\n" "$code" "$body"
+}
+
+cmd_models() {
+    local session_id="$1"
+
+    if declare -F models_list >/dev/null 2>&1; then
+        models_list
+    else
+        echo "Model listing not available for current provider."
+    fi
+    return 0
+}
+
+# ============================================================================
 # Command: /help
 # Show available commands
 # ============================================================================
@@ -78,6 +103,7 @@ cmd_help() {
     local session_id="$1"
     echo "Available commands:"
     echo "  /model [name]  - Show or switch the current model"
+    echo "  /models        - List available models for current provider"
     echo "  /tools [on|off]- Show or toggle tool usage"
     echo "  /allowcmd [c]  - Allow a shell command for tool execution"
     echo "  /memory [cmd]  - Memory system (list|save|search|clear)"
@@ -288,6 +314,10 @@ process_command() {
     case "$cmd" in
         model)
             cmd_model "$session_id" $args
+            return $?
+            ;;
+        models)
+            cmd_models "$session_id"
             return $?
             ;;
         tools)
