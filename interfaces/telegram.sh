@@ -63,9 +63,9 @@ _telegram_send_message() {
         local ok
         ok=$(echo "$result" | jq -r '.ok // false')
         if [[ "$ok" != "true" ]]; then
-            log_error "Telegram sendMessage failed: $result"
+            log_error "event=telegram_send_failed payload=$result"
         else
-            log_info "Telegram sendMessage ok (chat_id=$chat_id, bytes=${#chunk})"
+            log_info "event=telegram_send_ok chat_id=$chat_id bytes=${#chunk}"
         fi
     done
 }
@@ -115,12 +115,12 @@ _process_update() {
     
     # Check user authorization
     if ! _is_user_allowed "$user_id"; then
-        log_info "Unauthorized user: $user_id ($username)"
+        log_info "event=telegram_unauthorized user_id=$user_id username=$username"
         _telegram_send_message "$chat_id" "Sorry, you are not authorized to use this bot."
         return 0
     fi
     
-    log_info "Message from $username ($user_id): ${text:0:50}..."
+    log_info "event=telegram_message user_id=$user_id username=$username preview=${text:0:50}"
     
     # Send typing indicator
     _telegram_send_typing "$chat_id"
@@ -131,7 +131,7 @@ _process_update() {
     # Enqueue message to daemon; daemon will reply via interface_send
     enqueue_message "$text" "$session_id" "telegram"
     
-    log_info "Queued message for $username"
+    log_info "event=telegram_queued user_id=$user_id username=$username"
 }
 
 # Start interface - called by daemon
@@ -163,7 +163,7 @@ interface_start() {
         local ok
         ok=$(echo "$updates" | jq -r '.ok // false')
         if [[ "$ok" != "true" ]]; then
-            log_error "Telegram API error: $updates"
+            log_error "event=telegram_api_error payload=$updates"
             sleep 5
             continue
         fi

@@ -189,7 +189,7 @@ process_message() {
         source "$CONFIG_DIR/runtime.env"
     fi
 
-    log_info "Processing message from $source: ${user_message:0:50}..."
+    log_info "event=message_processing source=$source preview=${user_message:0:50}"
 
     # Check if it's a command
     if [[ "$user_message" == /* ]]; then
@@ -271,16 +271,16 @@ llm_run() {
     local response
     local llm_start llm_end llm_elapsed
     llm_start=$(date +%s)
-    log_info "LLM request start (session=$session_id, source=$source)"
-    log_info "LLM request messages (session=$session_id): $(echo "$messages" | jq -c '.')"
+    log_info "event=llm_request_start session=$session_id source=$source"
+    log_info "event=llm_request_messages session=$session_id payload=$(echo "$messages" | jq -c '.')"
     set +e
     response=$(llm_chat "$messages")
     local llm_status=$?
     set -e
     llm_end=$(date +%s)
     llm_elapsed=$((llm_end - llm_start))
-    log_info "LLM response received (session=$session_id, source=$source, status=$llm_status, elapsed=${llm_elapsed}s, bytes=${#response})"
-    log_info "LLM response raw (session=$session_id): $response"
+    log_info "event=llm_response session=$session_id source=$source status=$llm_status elapsed=${llm_elapsed}s bytes=${#response}"
+    log_info "event=llm_response_raw session=$session_id payload=$response"
 
     append_llm_log "$session_id" "$messages" "${LLM_LAST_REQUEST:-}" "${LLM_LAST_RESPONSE:-}" "$llm_status" "$llm_elapsed" "$source"
     LLM_LAST_STATUS="$llm_status"
@@ -300,7 +300,7 @@ dispatch_response() {
     fi
 
     if [[ "$source" == "telegram" ]]; then
-        log_info "Sending response via interface (session=$session_id, source=$source)"
+        log_info "event=interface_send session=$session_id source=$source"
         interface_send "$session_id" "$response"
     fi
 }
@@ -311,7 +311,7 @@ handle_incoming_message() {
     local message="$3"
 
     [[ -z "$message" ]] && return 0
-    log_info "Received message (session=$session_id, source=$source, bytes=${#message})"
+    log_info "event=message_received session=$session_id source=$source bytes=${#message}"
 
     init_session "$session_id"
 
