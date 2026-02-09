@@ -288,12 +288,30 @@ llm_run() {
     response=$(llm_chat "$messages")
     local llm_status=$?
     set -e
+
+    local raw_meta="$response"
+    local meta_text=""
+    local meta_request=""
+    local meta_response=""
+    if echo "$raw_meta" | jq -e . >/dev/null 2>&1; then
+        meta_text=$(echo "$raw_meta" | jq -r '.text // empty')
+        meta_request=$(echo "$raw_meta" | jq -r '.request // empty')
+        meta_response=$(echo "$raw_meta" | jq -r '.response // empty')
+    else
+        meta_text="$raw_meta"
+    fi
+
+    response="$meta_text"
     llm_end=$(date +%s)
     llm_elapsed=$((llm_end - llm_start))
     log_info "event=llm_response session=$session_id source=$source status=$llm_status elapsed=${llm_elapsed}s bytes=${#response}"
-    log_info "event=llm_response_raw session=$session_id payload=$response"
+    if [[ -n "$meta_response" ]]; then
+        log_info "event=llm_response_raw session=$session_id payload=$meta_response"
+    else
+        log_info "event=llm_response_raw session=$session_id payload=$raw_meta"
+    fi
 
-    append_llm_log "$session_id" "$messages" "${LLM_LAST_REQUEST:-}" "${LLM_LAST_RESPONSE:-}" "$llm_status" "$llm_elapsed" "$source"
+    append_llm_log "$session_id" "$messages" "$meta_request" "$meta_response" "$llm_status" "$llm_elapsed" "$source"
     LLM_LAST_STATUS="$llm_status"
 
     echo "$response"

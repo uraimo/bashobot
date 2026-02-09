@@ -90,15 +90,13 @@ _gemini_build_request() {
 _gemini_send_request() {
     local request_body="$1"
 
-    LLM_LAST_REQUEST="$request_body"
     local response
     response=$(curl -s -X POST \
         "${GEMINI_API_URL}/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}" \
         -H "Content-Type: application/json" \
         -d "$request_body" \
         --max-time 120)
-    LLM_LAST_RESPONSE="$response"
-    echo "$response"
+    jq -n --arg request "$request_body" --arg response "$response" '{request: $request, response: $response}'
 }
 
 # Make a single API call to Gemini
@@ -109,6 +107,15 @@ _gemini_api_call() {
     local request_body
     request_body=$(_gemini_build_request "$contents" "$tools")
     _gemini_send_request "$request_body"
+}
+
+_gemini_pack_response() {
+    local text="$1"
+    local request="$2"
+    local response="$3"
+
+    jq -n --arg text "$text" --arg request "$request" --arg response "$response" \
+        '{text: $text, request: $request, response: $response}'
 }
 
 # Main chat function - called by bashobot core
@@ -133,14 +140,18 @@ llm_chat() {
         iteration=$((iteration + 1))
         
         local response
-        response=$(_gemini_api_call "$gemini_contents" "$tools")
+        local api_result api_request api_response
+        api_result=$(_gemini_api_call "$gemini_contents" "$tools")
+        api_request=$(echo "$api_result" | jq -r '.request // empty')
+        api_response=$(echo "$api_result" | jq -r '.response // empty')
+        response="$api_response"
         
         # Check for errors
         local error
         error=$(echo "$response" | jq -r '.error.message // empty')
         if [[ -n "$error" ]]; then
             log_error "Gemini API error: $error"
-            echo "Error: $error"
+            _gemini_pack_response "Error: $error" "$api_request" "$api_response"
             return 1
         fi
         
@@ -165,9 +176,9 @@ llm_chat() {
             if [[ "$approval_required" == "true" ]]; then
                 local prompt
                 prompt=$(echo "$tool_result" | jq -r '.prompt // .error // "Approval required"' 2>/dev/null)
-                echo "$prompt"
-                return 0
-            fi
+                    _gemini_pack_response "$prompt" "$api_request" "$api_response"
+                    return 0
+                fi
 
             log_info "Tool result: ${tool_result:0:200}..."
             
@@ -203,16 +214,16 @@ llm_chat() {
         
         if [[ -z "$text" ]]; then
             log_error "No text in Gemini response: $response"
-            echo "Sorry, I received an empty response."
+            _gemini_pack_response "Sorry, I received an empty response." "$api_request" "$api_response"
             return 1
         fi
         
-        echo "$text"
+        _gemini_pack_response "$text" "$api_request" "$api_response"
         return 0
     done
     
     log_error "Max tool iterations reached"
-    echo "Sorry, I made too many tool calls. Please try a simpler request."
+    _gemini_pack_response "Sorry, I made too many tool calls. Please try a simpler request." "$api_request" "$api_response"
     return 1
 }
 
