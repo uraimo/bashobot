@@ -223,7 +223,24 @@ process_message() {
     
     log_info "Processing message from $source: ${user_message:0:50}..."
 
-    # Handle pending command approvals
+    # Check if it's a command
+    if [[ "$user_message" == /* ]] && type process_command &>/dev/null; then
+        local cmd_output cmd_output_file
+        cmd_output_file=$(mktemp)
+        process_command "$session_id" "$user_message" > "$cmd_output_file"
+        local cmd_status=$?
+        cmd_output=$(cat "$cmd_output_file")
+        rm -f "$cmd_output_file"
+
+        if [[ $cmd_status -eq 0 ]]; then
+            # Command handled, return output
+            echo "$cmd_output"
+            return 0
+        fi
+        # cmd_status == 1 means not a command, continue to LLM
+    fi
+
+    # Handle pending command approvals (non-slash input only)
     if type get_pending_approval &>/dev/null; then
         local pending_cmd
         pending_cmd=$(get_pending_approval "$session_id")
@@ -242,23 +259,6 @@ process_message() {
             echo "Error: command denied: $pending_cmd"
             return 0
         fi
-    fi
-    
-    # Check if it's a command
-    if [[ "$user_message" == /* ]] && type process_command &>/dev/null; then
-        local cmd_output cmd_output_file
-        cmd_output_file=$(mktemp)
-        process_command "$session_id" "$user_message" > "$cmd_output_file"
-        local cmd_status=$?
-        cmd_output=$(cat "$cmd_output_file")
-        rm -f "$cmd_output_file"
-
-        if [[ $cmd_status -eq 0 ]]; then
-            # Command handled, return output
-            echo "$cmd_output"
-            return 0
-        fi
-        # cmd_status == 1 means not a command, continue to LLM
     fi
     
     # Add user message to session
