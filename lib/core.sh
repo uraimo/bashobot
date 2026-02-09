@@ -226,7 +226,7 @@ process_message() {
     local messages
     messages=$(build_messages_for_llm "$session_id" "$user_message")
 
-    # Call LLM provider (function defined in provider script)
+    # Call LLM provider
     local response
     response=$(llm_run "$messages" "$session_id" "$source")
     local llm_status="${LLM_LAST_STATUS:-0}"
