@@ -122,8 +122,11 @@ _process_update() {
     init_session "$session_id"
     
     # Process message
-    local response
-    response=$(process_message "$session_id" "$text" "telegram")
+    local response response_file
+    response_file=$(mktemp)
+    process_message "$session_id" "$text" "telegram" > "$response_file"
+    response=$(cat "$response_file")
+    rm -f "$response_file"
     
     # Send response
     _telegram_send_message "$chat_id" "$response"

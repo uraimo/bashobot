@@ -77,6 +77,11 @@ EOF
     LLM_PROVIDER="${BASHOBOT_LLM:-gemini}"
     INTERFACE="${BASHOBOT_INTERFACE:-telegram}"
     HEARTBEAT_INTERVAL="${BASHOBOT_HEARTBEAT_INTERVAL:-30}"
+
+    # Load runtime overrides if present (e.g., last /model)
+    if [[ -f "$CONFIG_DIR/runtime.env" ]]; then
+        source "$CONFIG_DIR/runtime.env"
+    fi
 }
 
 init_pipes() {
@@ -208,6 +213,11 @@ process_message() {
     local source="${3:-cli}"  # cli, telegram, pipe
 
     CURRENT_SESSION_ID="$session_id"
+
+    # Reload runtime overrides on each message (keeps /model changes)
+    if [[ -f "$CONFIG_DIR/runtime.env" ]]; then
+        source "$CONFIG_DIR/runtime.env"
+    fi
     
     log_info "Processing message from $source: ${user_message:0:50}..."
 
@@ -234,10 +244,13 @@ process_message() {
     
     # Check if it's a command
     if [[ "$user_message" == /* ]] && type process_command &>/dev/null; then
-        local cmd_output
-        cmd_output=$(process_command "$session_id" "$user_message")
+        local cmd_output cmd_output_file
+        cmd_output_file=$(mktemp)
+        process_command "$session_id" "$user_message" > "$cmd_output_file"
         local cmd_status=$?
-        
+        cmd_output=$(cat "$cmd_output_file")
+        rm -f "$cmd_output_file"
+
         if [[ $cmd_status -eq 0 ]]; then
             # Command handled, return output
             echo "$cmd_output"
@@ -324,8 +337,11 @@ daemon_loop() {
 
                 # Use a dedicated session to avoid polluting user sessions
                 init_session "heartbeat"
-                local response
-                response=$(process_message "heartbeat" "$heartbeat_message" "daemon")
+                local response response_file
+                response_file=$(mktemp)
+                process_message "heartbeat" "$heartbeat_message" "daemon" > "$response_file"
+                response=$(cat "$response_file")
+                rm -f "$response_file"
 
                 if [[ "$response" != "HEARTBEAT_OK" ]]; then
                     log_info "Heartbeat response: $response"
@@ -357,8 +373,11 @@ daemon_loop() {
                 
                 init_session "$session_id"
                 
-                local response
-                response=$(process_message "$session_id" "$message" "$source")
+                local response response_file
+                response_file=$(mktemp)
+                process_message "$session_id" "$message" "$source" > "$response_file"
+                response=$(cat "$response_file")
+                rm -f "$response_file"
                 
                 # Write response to output pipe (base64 encode to handle newlines)
                 local encoded_response
