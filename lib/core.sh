@@ -151,8 +151,9 @@ session_append_llm_log() {
     local error_text="${8:-}"
     local error_raw="${9:-}"
 
-    local session_file
-    session_file=$(session_file_path "$session_id")
+    local llm_file
+    llm_file=$(session_llm_file_path "$session_id")
+    session_ensure_llm_log "$session_id"
 
     local model_name="unknown"
     case "$LLM_PROVIDER" in
