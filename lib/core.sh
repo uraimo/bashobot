@@ -192,17 +192,17 @@ process_message() {
 
     # Handle pending command approvals (non-slash input only)
     local pending_cmd
-    pending_cmd=$(get_pending_approval "$session_id")
+    pending_cmd=$(approval_get_pending "$session_id")
     if [[ -n "$pending_cmd" ]]; then
         local decision
         decision=$(echo "$user_message" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
         if [[ "$decision" == "yes" ]]; then
             add_command_to_whitelist "$pending_cmd"
-            clear_pending_approval "$session_id"
+            approval_clear_pending "$session_id"
             echo "Approved command: $pending_cmd"
             return 0
         fi
-        clear_pending_approval "$session_id"
+        approval_clear_pending "$session_id"
         echo "Error: command denied: $pending_cmd"
         return 0
     fi

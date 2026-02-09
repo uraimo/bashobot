@@ -144,7 +144,7 @@ llm_chat() {
             
             # Execute the tool
             local tool_result
-            tool_result=$(execute_tool "$func_name" "$func_args")
+            tool_result=$(tool_execute "$func_name" "$func_args")
             
             local approval_required
             approval_required=$(echo "$tool_result" | jq -r '.approval_required // empty' 2>/dev/null || true)

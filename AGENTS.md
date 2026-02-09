@@ -168,11 +168,11 @@ Bashobot supports tool calling for bash execution and file operations. Tools are
 | Function | Purpose |
 |----------|---------|
 | `get_tools_definition()` | Get tool definitions (provider-agnostic) |
-| `execute_tool()` | Dispatch and execute a tool by name |
-| `tool_bash()` | Execute bash commands |
+| `tool_execute()` | Dispatch and execute a tool by name |
+| `tool_exec_shell()` | Execute bash commands |
 | `tool_read_file()` | Read file contents |
 | `tool_write_file()` | Write to files |
-| `tool_list_files()` | List directory contents |
+| `tool_list_dir()` | List directory contents |
 | `tool_memory_search()` | Search conversation memories |
 | `get_tools_gemini()` | Get tools in Gemini format |
 | `get_tools_openai()` | Get tools in OpenAI format |

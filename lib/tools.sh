@@ -143,81 +143,6 @@ EOF
 # ============================================================================
 # Security Helpers
 # ============================================================================
-
-ensure_command_whitelist_file() {
-    local whitelist_dir
-    whitelist_dir=$(dirname "$BASHOBOT_CMD_WHITELIST_FILE")
-    mkdir -p "$whitelist_dir"
-    if [[ ! -f "$BASHOBOT_CMD_WHITELIST_FILE" ]]; then
-        touch "$BASHOBOT_CMD_WHITELIST_FILE"
-        chmod 600 "$BASHOBOT_CMD_WHITELIST_FILE" 2>/dev/null || true
-    fi
-}
-
-# Sanitize id for filesystem usage
-sanitize_id() {
-    echo "$1" | sed 's/[^A-Za-z0-9._-]/_/g'
-}
-
-set_pending_approval() {
-    local session_id="$1"
-    local cmd="$2"
-    local safe_id
-    safe_id=$(sanitize_id "$session_id")
-    mkdir -p "$BASHOBOT_CMD_APPROVAL_DIR"
-    printf '%s' "$cmd" > "$BASHOBOT_CMD_APPROVAL_DIR/$safe_id"
-}
-
-get_pending_approval() {
-    local session_id="$1"
-    local safe_id
-    safe_id=$(sanitize_id "$session_id")
-    if [[ -f "$BASHOBOT_CMD_APPROVAL_DIR/$safe_id" ]]; then
-        cat "$BASHOBOT_CMD_APPROVAL_DIR/$safe_id"
-    fi
-}
-
-clear_pending_approval() {
-    local session_id="$1"
-    local safe_id
-    safe_id=$(sanitize_id "$session_id")
-    rm -f "$BASHOBOT_CMD_APPROVAL_DIR/$safe_id"
-}
-
-# Extract the primary command name from a shell command string
-extract_command_name() {
-    local raw="$1"
-    if [[ -z "$raw" ]]; then
-        return 1
-    fi
-
-    # Strip leading whitespace
-    raw=$(echo "$raw" | sed 's/^[[:space:]]*//')
-
-    # Use awk to skip env assignments and sudo
-    echo "$raw" | awk '{
-        for (i = 1; i <= NF; i++) {
-            if ($i ~ /^[A-Za-z_][A-Za-z0-9_]*=.*/) { next }
-            if ($i == "sudo") { continue }
-            print $i; exit
-        }
-    }'
-}
-
-is_command_whitelisted() {
-    local cmd="$1"
-    ensure_command_whitelist_file
-    grep -Fxq "$cmd" "$BASHOBOT_CMD_WHITELIST_FILE"
-}
-
-add_command_to_whitelist() {
-    local cmd="$1"
-    ensure_command_whitelist_file
-    if ! grep -Fxq "$cmd" "$BASHOBOT_CMD_WHITELIST_FILE"; then
-        echo "$cmd" >> "$BASHOBOT_CMD_WHITELIST_FILE"
-    fi
-}
-
 # Resolve path to absolute, expanding ~ and checking allowed dirs
 resolve_path() {
     local input_path="$1"
@@ -273,7 +198,7 @@ check_path_allowed() {
 # ============================================================================
 
 # Execute a bash command
-tool_bash() {
+tool_exec_shell() {
     local command="$1"
     local working_dir="${2:-$HOME}"
     
@@ -296,7 +221,7 @@ tool_bash() {
             local session_id="${CURRENT_SESSION_ID:-unknown}"
             local prompt
             prompt="The command \"$command\" is about to be executed for the first time, approve? <yes|no>"
-            set_pending_approval "$session_id" "$cmd_name"
+            approval_set_pending "$session_id" "$cmd_name"
             jq -n \
                 --arg prompt "$prompt" \
                 --arg cmd "$cmd_name" \
@@ -426,7 +351,7 @@ tool_write_file() {
 }
 
 # List files in a directory
-tool_list_files() {
+tool_list_dir() {
     local path="$1"
     local recursive="${2:-false}"
     
@@ -523,7 +448,7 @@ tool_memory_search() {
 
 # Execute a tool by name with JSON arguments
 # Returns: JSON result
-execute_tool() {
+tool_execute() {
     local tool_name="$1"
     local args_json="$2"
     
@@ -537,7 +462,7 @@ execute_tool() {
             local command working_dir
             command=$(echo "$args_json" | jq -r '.command // empty')
             working_dir=$(echo "$args_json" | jq -r '.working_dir // empty')
-            tool_bash "$command" "$working_dir"
+            tool_exec_shell "$command" "$working_dir"
             ;;
         read_file)
             local path offset limit
@@ -556,7 +481,7 @@ execute_tool() {
             local path recursive
             path=$(echo "$args_json" | jq -r '.path // empty')
             recursive=$(echo "$args_json" | jq -r '.recursive // false')
-            tool_list_files "$path" "$recursive"
+            tool_list_dir "$path" "$recursive"
             ;;
         memory_search)
             local query max_results
