@@ -205,53 +205,20 @@ process_message() {
 
     log_info "event=message_processing source=$source preview=${user_message:0:50}"
 
-    # Check if it's a command
-    if [[ "$user_message" == /* ]]; then
-        local cmd_output
-        cmd_output=$(capture_output process_command "$session_id" "$user_message")
-        local cmd_status=$?
-
-        if [[ $cmd_status -eq 0 ]]; then
-            # Command handled, return output
-            echo "$cmd_output"
-            return 0
-        fi
-        # cmd_status == 1 means not a command, continue to LLM
-    fi
-
-    # Handle pending command approvals (non-slash input only)
-    local pending_cmd
-    pending_cmd=$(approval_get_pending "$session_id")
-    if [[ -n "$pending_cmd" ]]; then
-        local decision
-        decision=$(echo "$user_message" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-        if [[ "$decision" == "yes" ]]; then
-            add_command_to_whitelist "$pending_cmd"
-            approval_clear_pending "$session_id"
-            echo "Approved command: $pending_cmd"
-            return 0
-        fi
-        approval_clear_pending "$session_id"
-        echo "Error: command denied: $pending_cmd"
+    local cmd_response
+    if cmd_response=$(handle_command_message "$session_id" "$user_message"); then
+        echo "$cmd_response"
         return 0
     fi
 
-    # Add user message to session
-    session_append_message "$session_id" "user" "$user_message"
-
-    # Check if we need to summarize before calling LLM
-    check_and_summarize "$session_id"
-
-    # Get conversation history (includes summary if present)
-    local messages
-    messages=$(get_messages_for_llm "$session_id")
-
-    # Inject relevant memory context if this is the first message in session
-    local msg_count
-    msg_count=$(echo "$messages" | jq 'length')
-    if [[ $msg_count -le 2 ]]; then
-        messages=$(inject_memory_context "$messages" "$user_message")
+    local approval_response
+    if approval_response=$(handle_pending_approval "$session_id" "$user_message"); then
+        echo "$approval_response"
+        return 0
     fi
+
+    local messages
+    messages=$(build_messages_for_llm "$session_id" "$user_message")
 
     # Call LLM provider (function defined in provider script)
     local response
@@ -272,6 +239,69 @@ process_message() {
     session_append_message "$session_id" "assistant" "$response"
 
     echo "$response"
+}
+
+handle_command_message() {
+    local session_id="$1"
+    local user_message="$2"
+
+    if [[ "$user_message" != /* ]]; then
+        return 1
+    fi
+
+    local cmd_output
+    cmd_output=$(capture_output process_command "$session_id" "$user_message")
+    local cmd_status=$?
+
+    if [[ $cmd_status -eq 0 ]]; then
+        echo "$cmd_output"
+        return 0
+    fi
+
+    return 1
+}
+
+handle_pending_approval() {
+    local session_id="$1"
+    local user_message="$2"
+
+    local pending_cmd
+    pending_cmd=$(approval_get_pending "$session_id")
+    if [[ -z "$pending_cmd" ]]; then
+        return 1
+    fi
+
+    local decision
+    decision=$(echo "$user_message" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    if [[ "$decision" == "yes" ]]; then
+        add_command_to_whitelist "$pending_cmd"
+        approval_clear_pending "$session_id"
+        echo "Approved command: $pending_cmd"
+        return 0
+    fi
+
+    approval_clear_pending "$session_id"
+    echo "Error: command denied: $pending_cmd"
+    return 0
+}
+
+build_messages_for_llm() {
+    local session_id="$1"
+    local user_message="$2"
+
+    session_append_message "$session_id" "user" "$user_message"
+    check_and_summarize "$session_id"
+
+    local messages
+    messages=$(get_messages_for_llm "$session_id")
+
+    local msg_count
+    msg_count=$(echo "$messages" | jq 'length')
+    if [[ $msg_count -le 2 ]]; then
+        messages=$(inject_memory_context "$messages" "$user_message")
+    fi
+
+    echo "$messages"
 }
 
 llm_run() {
