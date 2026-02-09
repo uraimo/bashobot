@@ -19,9 +19,11 @@ fi
 
 models_list() {
     local code body
-    read -r code body < <(_models_http_get "https://api.anthropic.com/v1/models" \
+    _models_http_get "https://api.anthropic.com/v1/models" \
         -H "x-api-key: $ANTHROPIC_API_KEY" \
-        -H "anthropic-version: 2023-06-01")
+        -H "anthropic-version: 2023-06-01"
+    code="$MODELS_HTTP_CODE"
+    body="$MODELS_HTTP_BODY"
 
     if [[ "$code" != "200" ]]; then
         local err

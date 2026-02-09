@@ -19,7 +19,9 @@ fi
 
 models_list() {
     local code body
-    read -r code body < <(_models_http_get "https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}")
+    _models_http_get "https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}"
+    code="$MODELS_HTTP_CODE"
+    body="$MODELS_HTTP_BODY"
 
     if [[ "$code" != "200" ]]; then
         local err

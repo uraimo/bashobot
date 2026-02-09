@@ -77,11 +77,11 @@ cmd_model() {
 _models_http_get() {
     local url="$1"
     shift
-    local response body code
-    response=$(curl -s -w "\n%{http_code}" "$url" "$@")
-    body=$(printf "%s" "$response" | sed '$d')
-    code=$(printf "%s" "$response" | tail -n1)
-    printf "%s\n%s\n" "$code" "$body"
+    local tmp
+    tmp=$(mktemp)
+    MODELS_HTTP_CODE=$(curl -s -o "$tmp" -w "%{http_code}" "$url" "$@")
+    MODELS_HTTP_BODY=$(cat "$tmp")
+    rm -f "$tmp"
 }
 
 cmd_models() {
