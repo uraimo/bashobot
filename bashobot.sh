@@ -286,11 +286,14 @@ process_message() {
     
     # Call LLM provider (function defined in provider script)
     local response
+    set +e
     response=$(llm_chat "$messages")
+    local llm_status=$?
+    set -e
     
-    if [[ -z "$response" ]]; then
+    if [[ $llm_status -ne 0 ]] || [[ -z "$response" ]]; then
         response="Sorry, I encountered an error processing your message."
-        log_error "Empty response from LLM"
+        log_error "LLM error (status=$llm_status) or empty response"
     fi
     
     # Add assistant response to session
