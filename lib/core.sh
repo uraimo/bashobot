@@ -257,6 +257,42 @@ process_message() {
     echo "$response"
 }
 
+dispatch_response() {
+    local session_id="$1"
+    local source="$2"
+    local response="$3"
+
+    if [[ "$source" == "pipe" ]] || [[ "$source" == "cli" ]]; then
+        local encoded_response
+        encoded_response=$(echo "$response" | base64)
+        echo "${session_id}|${encoded_response}" > "$OUTPUT_PIPE"
+    fi
+
+    if [[ "$source" == "telegram" ]]; then
+        log_info "Sending response via interface (session=$session_id, source=$source)"
+        interface_send "$session_id" "$response"
+    fi
+}
+
+handle_incoming_message() {
+    local session_id="$1"
+    local source="$2"
+    local message="$3"
+
+    [[ -z "$message" ]] && return 0
+    log_info "Received message (session=$session_id, source=$source, bytes=${#message})"
+
+    init_session "$session_id"
+
+    local response response_file
+    response_file=$(mktemp)
+    process_message "$session_id" "$message" "$source" > "$response_file"
+    response=$(cat "$response_file")
+    rm -f "$response_file"
+
+    dispatch_response "$session_id" "$source" "$response"
+}
+
 daemon_loop() {
     log_info "Starting Bashobot daemon..."
     log_info "LLM Provider: $LLM_PROVIDER"
@@ -329,29 +365,7 @@ daemon_loop() {
                 source=$(echo "$line" | cut -d'|' -f2)
                 message=$(echo "$line" | cut -d'|' -f3-)
 
-                [[ -z "$message" ]] && continue
-                log_info "Received pipe message (session=$session_id, source=$source, bytes=${#message})"
-
-                init_session "$session_id"
-
-                local response response_file
-                response_file=$(mktemp)
-                process_message "$session_id" "$message" "$source" > "$response_file"
-                response=$(cat "$response_file")
-                rm -f "$response_file"
-
-                # Write response to output pipe only for pipe/cli sources
-                if [[ "$source" == "pipe" ]] || [[ "$source" == "cli" ]]; then
-                    local encoded_response
-                    encoded_response=$(echo "$response" | base64)
-                    echo "${session_id}|${encoded_response}" > "$OUTPUT_PIPE"
-                fi
-
-                # Also send via interface if applicable
-                if [[ "$source" == "telegram" ]]; then
-                    log_info "Sending response via interface (session=$session_id, source=$source)"
-                    interface_send "$session_id" "$response"
-                fi
+                handle_incoming_message "$session_id" "$source" "$message"
             fi
         } 2>/dev/null
     done
