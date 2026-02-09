@@ -341,11 +341,7 @@ llm_run() {
     llm_end=$(date +%s)
     llm_elapsed=$((llm_end - llm_start))
     log_info "event=llm_response session=$session_id source=$source status=$llm_status elapsed=${llm_elapsed}s bytes=${#response}"
-    if [[ -n "$meta_response" ]]; then
-        log_info "event=llm_response_raw session=$session_id payload=$meta_response"
-    else
-        log_info "event=llm_response_raw session=$session_id payload=$raw_meta"
-    fi
+    # Raw provider payloads are stored in session logs (not emitted to bashobot.log)
 
     local error_text=""
     local error_raw=""
