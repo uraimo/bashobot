@@ -7,9 +7,14 @@
   </p>
 </div>
 
-# Bashobot
 
-Bashobot is a personal AI assistant built entirely in **pure bash** (compatible with bash 3.2+). Inspired by [OpenClaw](https://github.com/openclaw/openclaw), it uses only standard Unix utilities (`curl`, `jq`, `base64`, etc.) with no Node.js or other runtimes. It can run almost anywhere.
+BashoBot is a personal AI assistant built entirely in **pure bash** (compatible with bash 3.2+). Inspired by [OpenClaw](https://github.com/openclaw/openclaw), it uses only standard Unix utilities (`curl`, `jq`, `base64`, etc.) with no Node.js or other runtimes, implemented with a modular architecture using named pipes. It can run almost anywhere.
+
+
+<div align="center">
+  <img src="https://github.com/uraimo/bashobot/blob/main/static/bashobot.gif?raw=true">
+</div>
+
 
 ## Quick Start
 
@@ -17,7 +22,7 @@ Bashobot is a personal AI assistant built entirely in **pure bash** (compatible 
 # 1. First run creates config file
 ./bashobot.sh
 
-# 2. Edit config with your API keys
+# 2. Edit config with your API keys, optionally configure Telegram and enable/disable other features
 vim ~/.bashobot/config.env
 
 # 3. Start daemon
@@ -54,7 +59,7 @@ BASHOBOT_INTERFACE=none ./bashobot.sh -daemon
 | `/help` | Show available commands |
 | `/model [name]` | Show or switch model |
 | `/models` | List available models for current provider |
-| `/tools [on|off]` | Show or toggle tool usage |
+| `/tools [on,off]` | Show or toggle tool usage |
 | `/allowcmd [cmd]` | Allow a shell command for tool execution |
 | `/memory [cmd]` | Memory system (list, save, search, clear, on/off) |
 | `/context` | Show session estimated context/token usage |
@@ -85,12 +90,12 @@ OPENAI_API_KEY=your_key
 TELEGRAM_BOT_TOKEN=your_token
 TELEGRAM_ALLOWED_USERS=123456789  # Comma-separated user IDs (optional)
 
-# Tool security (optional)
-#BASHOBOT_ALLOWED_DIRS=/home/user,/tmp  # Restrict file access
-
-# Heartbeat
+# Heartbeat                                        
 #BASHOBOT_HEARTBEAT_ENABLED=true
 #BASHOBOT_HEARTBEAT_INTERVAL=300
+
+# Tool security (optional)
+#BASHOBOT_ALLOWED_DIRS=/home/user,/tmp  # Restrict file access
 
 # Command whitelist
 #BASHOBOT_CMD_WHITELIST_ENABLED=true
@@ -133,7 +138,7 @@ bashobot.sh                 # Main entry point
 
 ### Daemon + Named Pipes
 - The daemon (`-daemon`) runs continuously.
-- Inputs arrive via named pipe (`input.pipe`) and interfaces (e.g., Telegram polling).
+- Inputs arrive via named pipe (`input.pipe`) from the cli and other interfaces (e.g., Telegram polling).
 - Clients (`-cli`, `-t`) send messages via the input pipe and read responses from the output pipe.
 - Protocol: `SESSION_ID|SOURCE|MESSAGE` (input) and `SESSION_ID|BASE64_RESPONSE` (output).
 
@@ -321,6 +326,11 @@ echo "test_session|pipe|/help" > ~/.bashobot/pipes/input.pipe
 cat ~/.bashobot/pipes/output.pipe | cut -d'|' -f2 | base64 -d
 ```
 
+## FAQ
+
+
+
 ## License
 
 MIT
+
