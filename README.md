@@ -1,6 +1,15 @@
+<div align="center">
+  <img src="https://github.com/uraimo/bashobot/blob/main/static/title.png?raw=true" width="600">
+  <h2>A Personal AI Assistant built with Bash</h2>
+  <p>
+    <img src="https://img.shields.io/badge/bash-≥3.2-blue" alt="Bash">
+    <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
+  </p>
+</div>
+
 # Bashobot
 
-Bashobot is a personal AI assistant built entirely in **pure bash** (compatible with bash 3.2+). Inspired by [OpenClaw](https://github.com/openclaw/openclaw), it uses only standard Unix utilities (`curl`, `jq`, `base64`, etc.) with no Node.js or other runtimes.
+Bashobot is a personal AI assistant built entirely in **pure bash** (compatible with bash 3.2+). Inspired by [OpenClaw](https://github.com/openclaw/openclaw), it uses only standard Unix utilities (`curl`, `jq`, `base64`, etc.) with no Node.js or other runtimes. It can run almost anywhere.
 
 ## Quick Start
 
