@@ -19,6 +19,12 @@ BASHOBOT_ALLOWED_DIRS="${BASHOBOT_ALLOWED_DIRS:-}"
 # Maximum output size for bash commands (in bytes)
 BASHOBOT_MAX_OUTPUT="${BASHOBOT_MAX_OUTPUT:-50000}"
 
+# Delay between tool calls (seconds)
+BASHOBOT_TOOL_CALL_DELAY_SECONDS="${BASHOBOT_TOOL_CALL_DELAY_SECONDS:-2}"
+
+# Tool call delay state file
+BASHOBOT_TOOL_CALL_DELAY_STATE_FILE="${BASHOBOT_TOOL_CALL_DELAY_STATE_FILE:-$CONFIG_DIR/tool_last_call_ts}"
+
 # Enable/disable command whitelist (default: enabled)
 BASHOBOT_CMD_WHITELIST_ENABLED="${BASHOBOT_CMD_WHITELIST_ENABLED:-true}"
 
@@ -444,6 +450,40 @@ tool_memory_search() {
 # Tool Dispatcher
 # ============================================================================
 
+# Enforce a minimum delay between tool calls to avoid rate limits
+apply_tool_call_delay() {
+    local delay_seconds="${BASHOBOT_TOOL_CALL_DELAY_SECONDS:-0}"
+
+    if [[ -z "$delay_seconds" || "$delay_seconds" == "0" ]]; then
+        return 0
+    fi
+
+    if ! [[ "$delay_seconds" =~ ^[0-9]+$ ]]; then
+        log_error "Invalid BASHOBOT_TOOL_CALL_DELAY_SECONDS: $delay_seconds"
+        return 0
+    fi
+
+    local now elapsed remaining last_ts ts_file
+    now=$(date +%s)
+    ts_file="$BASHOBOT_TOOL_CALL_DELAY_STATE_FILE"
+
+    if [[ -n "$ts_file" && -f "$ts_file" ]]; then
+        last_ts=$(<"$ts_file")
+    fi
+
+    if [[ "$last_ts" =~ ^[0-9]+$ ]]; then
+        elapsed=$((now - last_ts))
+        if ((elapsed < delay_seconds)); then
+            remaining=$((delay_seconds - elapsed))
+            sleep "$remaining"
+        fi
+    fi
+
+    if [[ -n "$ts_file" ]]; then
+        printf '%s' "$now" > "$ts_file" 2>/dev/null || true
+    fi
+}
+
 # Execute a tool by name with JSON arguments
 # Returns: JSON result
 tool_execute() {
@@ -454,6 +494,8 @@ tool_execute() {
         echo '{"error": "Tools are disabled"}'
         return 1
     fi
+
+    apply_tool_call_delay
     
     case "$tool_name" in
         bash)

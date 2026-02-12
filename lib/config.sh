@@ -67,6 +67,9 @@ config_ensure_file() {
 #BASHOBOT_HEARTBEAT_ENABLED=true
 #BASHOBOT_HEARTBEAT_INTERVAL=300
 
+# Tool rate limiting
+#BASHOBOT_TOOL_CALL_DELAY_SECONDS=2
+
 # Command whitelist
 #BASHOBOT_CMD_WHITELIST_ENABLED=true
 # Command whitelist file

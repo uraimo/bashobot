@@ -224,6 +224,7 @@ Bashobot supports tool calling for bash execution and file operations. Tools are
 | `BASHOBOT_TOOLS_ENABLED` | `true` | Enable/disable all tools |
 | `BASHOBOT_ALLOWED_DIRS` | (empty) | Comma-separated allowed directories (empty = all) |
 | `BASHOBOT_MAX_OUTPUT` | `50000` | Max bytes of command output |
+| `BASHOBOT_TOOL_CALL_DELAY_SECONDS` | `2` | Minimum delay between tool calls (seconds) |
 
 #### Tool Security
 - Set `BASHOBOT_TOOLS_ENABLED=false` to disable all tools.
