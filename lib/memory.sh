@@ -147,7 +147,7 @@ search_memories() {
     done
 
     local file
-    for file in "${files[@]}"; do
+    for file in "${files[@]:-}"; do
         while IFS= read -r match; do
             local line
             line="${match%%:*}"

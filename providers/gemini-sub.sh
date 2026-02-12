@@ -5,7 +5,7 @@
 # Required auth: OAuth via ./bashobot.sh -login gemini-sub
 #
 
-GEMINI_SUB_MODEL="${GEMINI_SUB_MODEL:-gemini-2.5-flash}"
+GEMINI_SUB_MODEL="${GEMINI_SUB_MODEL:-gemini-3-flash}"
 GEMINI_SUB_API_URL="https://cloudcode-pa.googleapis.com"
 
 # Maximum tool call iterations to prevent infinite loops
@@ -21,7 +21,7 @@ _gemini_sub_get_creds() {
 }
 
 models_list() {
-    echo "Gemini subscription models use the same IDs as Google Gemini (example: gemini-2.5-flash)."
+    echo "Gemini subscription models use the same IDs as Google Gemini (example: gemini-3-flash)."
 }
 
 # Convert our message format to Gemini format

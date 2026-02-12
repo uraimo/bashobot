@@ -23,7 +23,7 @@ BashoBot is a personal AI assistant built entirely in **pure bash** (compatible 
 # 1. First run creates config file
 ./bashobot.sh
 
-# 2. Edit config with your API keys, optionally configure Telegram and enable/disable other features
+# 2. Edit config with your API keys or -login <provider>, optionally configure Telegram and enable/disable other features
 vim ~/.bashobot/config.env
 
 # 3. Start daemon (add & or use nohup to start in in background, stop it with ./bashbot.sh -stop)
