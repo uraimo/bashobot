@@ -16,6 +16,7 @@ config_copy_templates() {
     fi
 
     mkdir -p "$workspace_dir"
+    mkdir -p "$workspace_dir/memory"
 
     local file
     for file in "$src_dir"/*.md; do

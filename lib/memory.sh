@@ -13,8 +13,8 @@
 BASHOBOT_MEMORY_ENABLED="${BASHOBOT_MEMORY_ENABLED:-true}"
 
 # Memory storage directory (markdown notes)
-MEMORY_DIR="${CONFIG_DIR}/memory"
-MEMORY_MAIN_FILE="${CONFIG_DIR}/MEMORY.md"
+MEMORY_DIR="${CONFIG_DIR}/workspace/memory"
+MEMORY_MAIN_FILE="${CONFIG_DIR}/workspace/MEMORY.md"
 
 # Maximum matches to return
 MAX_MEMORIES_IN_CONTEXT="${MAX_MEMORIES_IN_CONTEXT:-3}"

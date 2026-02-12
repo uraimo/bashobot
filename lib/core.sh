@@ -93,7 +93,7 @@ _get_system_prompt() {
     local workspace_dir="$CONFIG_DIR/workspace"
     local bootstrap_file="$workspace_dir/BOOTSTRAP.md"
 
-    local workspace_msg="Your workspace is in \`$workspace_dir\`, that's where all your files and your memories reside."
+    local workspace_msg="Your workspace is located in \`$workspace_dir\`, that's the directory where all your files and your memories reside. BOOTSTRAP.md, SOUL.md, IDENTITY.md, USER.md, AGENTS.md and the memory are there and ready for your updates."
 
     if [[ -f "$bootstrap_file" ]]; then
         base="$(cat "$bootstrap_file")"
