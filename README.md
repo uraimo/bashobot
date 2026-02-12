@@ -239,36 +239,27 @@ Bashobot supports tool calling for bash execution and file operations. Tools are
 
 ### Memory System
 
-Long-term memory through conversation summaries and keyword-based retrieval. Memories persist across sessions.
+Long-term memory through markdown notes stored under `~/.bashobot/memory` and `~/.bashobot/MEMORY.md`.
 
 #### How It Works
 - Auto-save on `/new`: conversations are saved to memory when cleared.
 - Keyword extraction and topic extraction via LLM.
 - Relevance search based on keywords.
-- Relevant memories are injected at the start of new conversations.
+- Relevant memory notes are injected at the start of new conversations.
 
 #### Memory Structure
 
-```json
-{
-  "id": "mem_1234567890",
-  "timestamp": "2024-01-15T10:30:00Z",
-  "session_id": "original_session_id",
-  "summary": "Conversation summary...",
-  "keywords": ["keyword1", "keyword2"],
-  "topics": ["topic1", "topic2"],
-  "message_count": 15
-}
-```
+- `~/.bashobot/MEMORY.md` — curated long‑term memory.
+- `~/.bashobot/memory/YYYY-MM-DD.md` — daily notes and summaries.
 
 #### Memory Commands
 
 | Command | Description |
 |---------|-------------|
-| `/memory` or `/memory list` | Show recent memories |
-| `/memory save` | Save current session to memory |
-| `/memory search <query>` | Search memories by keyword |
-| `/memory clear` | Delete all memories |
+| `/memory` or `/memory list` | Show recent memory files |
+| `/memory save` | Save current session to memory notes |
+| `/memory search <query>` | Search memory files for text |
+| `/memory clear` | Delete all memory files |
 | `/memory on,off` | Enable/disable memory system |
 
 #### Memory Configuration

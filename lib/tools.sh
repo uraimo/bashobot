@@ -407,29 +407,27 @@ tool_memory_search() {
     
     local results
     results=$(search_memories "$query" "$max_results")
-    
+
     local count
     count=$(echo "$results" | jq 'length')
-    
+
     if [[ $count -eq 0 ]]; then
         jq -n \
             --arg query "$query" \
             '{
                 query: $query,
                 found: 0,
-                message: "No relevant memories found for this query.",
+                message: "No relevant memory notes found for this query.",
                 memories: []
             }'
     else
-        # Format results for the LLM
         local formatted
         formatted=$(echo "$results" | jq '[.[] | {
-            date: (.timestamp | split("T")[0]),
-            topics: (.topics | join(", ")),
-            summary: .summary,
-            relevance_score: .relevance_score
+            file: (.file | split("/") | last),
+            line: .line,
+            text: .text
         }]')
-        
+
         jq -n \
             --arg query "$query" \
             --argjson count "$count" \
