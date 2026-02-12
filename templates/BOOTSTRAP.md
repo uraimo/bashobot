@@ -8,7 +8,7 @@ read_when:
 
 _You just woke up. Time to figure out who you are._
 
-There is no memory yet. There is a fresh workspace for you in `~/.bashobot/`, that's where all your files reside.
+There is no memory yet. This is a fresh workspace, that's where all your files reside.
 
 ## The Conversation
 

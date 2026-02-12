@@ -9,19 +9,20 @@ config_copy_templates() {
         return 0
     fi
 
-    local bootstrap_done="$CONFIG_DIR/BOOTSTRAP.done"
+    local workspace_dir="$CONFIG_DIR/workspace"
+    local bootstrap_done="$workspace_dir/BOOTSTRAP.done"
     if [[ -f "$bootstrap_done" ]]; then
         return 0
     fi
 
-    mkdir -p "$CONFIG_DIR"
+    mkdir -p "$workspace_dir"
 
     local file
     for file in "$src_dir"/*.md; do
         [[ -f "$file" ]] || continue
         local base
         base=$(basename "$file")
-        local dest="$CONFIG_DIR/$base"
+        local dest="$workspace_dir/$base"
         if [[ ! -f "$dest" ]]; then
             cp "$file" "$dest"
         fi

@@ -90,15 +90,18 @@ load_interface() {
 # Build system prompt
 _get_system_prompt() {
     local base=""
-    local bootstrap_file="$CONFIG_DIR/BOOTSTRAP.md"
+    local workspace_dir="$CONFIG_DIR/workspace"
+    local bootstrap_file="$workspace_dir/BOOTSTRAP.md"
 
-    if [[ -f "$bootstrap_file" ]];  then
+    local workspace_msg="Your workspace is in \`$workspace_dir\`, that's where all your files and your memories reside."
+
+    if [[ -f "$bootstrap_file" ]]; then
         base="$(cat "$bootstrap_file")"
     else
         local prompt_files=("SOUL.md" "IDENTITY.md" "USER.md" "AGENTS.md")
         local file
         for file in "${prompt_files[@]}"; do
-            local path="$CONFIG_DIR/$file"
+            local path="$workspace_dir/$file"
             if [[ -f "$path" ]]; then
                 base+="$(cat "$path")"
                 base+=$'\n\n'
@@ -107,13 +110,13 @@ _get_system_prompt() {
     fi
 
     if [[ -z "$base" ]]; then
-        base="You are Bashobot, a helpful personal AI assistant. Be concise and helpful."
+        base="You are Bashobot, a helpful personal AI assistant. Be concise and helpful. $workspace_msg"
     fi
 
     if [[ "$BASHOBOT_TOOLS_ENABLED" == "true" ]]; then
-        echo "$base You have access to tools for executing bash commands and reading/writing files. Use them when appropriate to help the user."
+        echo "$workspace_msg $base You have access to tools for executing bash commands and reading/writing files. Use them when appropriate to help the user."
     else
-        echo "$base"
+        echo "$workspace_msg $base"
     fi
 }
 
