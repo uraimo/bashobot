@@ -217,8 +217,8 @@ cmd_help() {
     echo "  /allowcmd [c]  - Allow a shell command for tool execution"
     echo "  /memory [cmd]  - Memory system (list|save|search|clear)"
     echo "  /context       - Show session context/token usage"
-    echo "  /clear         - Clear conversation history"
-    echo "  /summarize     - Force summarize the conversation"
+    echo "  /new          - Start a new conversation"
+    echo "  /compact       - Force compact the conversation"
     echo "  /help          - Show this help message"
     echo "  /exit          - Exit the CLI session (CLI only)"
     echo ""
@@ -367,12 +367,12 @@ cmd_context() {
 }
 
 # ============================================================================
-# Command: /clear
-# Clear conversation history (optionally saves to memory first)
+# Command: /new
+# Start a new conversation (optionally saves to memory first)
 # ============================================================================
-cmd_clear() {
+cmd_new() {
     local session_id="$1"
-    
+
     # Save to memory before clearing if memory is enabled
     if [[ "$BASHOBOT_MEMORY_ENABLED" == "true" ]]; then
         local saved
@@ -381,19 +381,19 @@ cmd_clear() {
             echo "Saved conversation to memory: $saved"
         fi
     fi
-    
+
     clear_session "$session_id"
     echo "Conversation cleared. Starting fresh!"
     return 0
 }
 
 # ============================================================================
-# Command: /summarize
-# Force summarize the current conversation
+# Command: /compact
+# Force compact the current conversation
 # ============================================================================
-cmd_summarize() {
+cmd_compact() {
     local session_id="$1"
-    
+
     force_summarize "$session_id"
     return 0
 }
@@ -453,12 +453,12 @@ process_command() {
             cmd_context "$session_id" $args
             return $?
             ;;
-        clear)
-            cmd_clear "$session_id" $args
+        new)
+            cmd_new "$session_id" $args
             return $?
             ;;
-        summarize)
-            cmd_summarize "$session_id" $args
+        compact)
+            cmd_compact "$session_id" $args
             return $?
             ;;
         *)

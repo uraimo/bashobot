@@ -216,12 +216,19 @@ session_append_llm_log() {
 # Core Agent Loop
 # ============================================================================
 
+resolve_history_session_id() {
+    echo "shared"
+}
+
 process_message() {
     local session_id="$1"
     local user_message="$2"
     local source="${3:-cli}"  # cli, telegram, pipe
 
-    CURRENT_SESSION_ID="$session_id"
+    local history_session_id
+    history_session_id=$(resolve_history_session_id "$session_id")
+
+    CURRENT_SESSION_ID="$history_session_id"
 
     # Reload runtime overrides on each message (keeps /model changes)
     if [[ -f "$CONFIG_DIR/runtime.env" ]]; then
@@ -231,23 +238,23 @@ process_message() {
     log_info "event=message_processing source=$source preview=${user_message:0:50}"
 
     local cmd_response
-    if cmd_response=$(handle_command_message "$session_id" "$user_message"); then
+    if cmd_response=$(handle_command_message "$history_session_id" "$user_message"); then
         echo "$cmd_response"
         return 0
     fi
 
     local approval_response
-    if approval_response=$(handle_pending_approval "$session_id" "$user_message"); then
+    if approval_response=$(handle_pending_approval "$history_session_id" "$user_message"); then
         echo "$approval_response"
         return 0
     fi
 
     local messages
-    messages=$(build_messages_for_llm "$session_id" "$user_message")
+    messages=$(build_messages_for_llm "$history_session_id" "$user_message")
 
     # Call LLM provider
     local response
-    response=$(llm_run "$messages" "$session_id" "$source")
+    response=$(llm_run "$messages" "$history_session_id" "$source")
     local llm_status="${LLM_LAST_STATUS:-0}"
 
     if [[ $llm_status -ne 0 ]] || [[ -z "$response" ]]; then
@@ -261,7 +268,7 @@ process_message() {
     fi
 
     # Add assistant response to session
-    session_append_message "$session_id" "assistant" "$response"
+    session_append_message "$history_session_id" "assistant" "$response"
 
     echo "$response"
 }
@@ -404,7 +411,9 @@ handle_incoming_message() {
     [[ -z "$message" ]] && return 0
     log_info "event=message_received session=$session_id source=$source bytes=${#message}"
 
-    session_init "$session_id"
+    local history_session_id
+    history_session_id=$(resolve_history_session_id "$session_id")
+    session_init "$history_session_id"
 
     local response
     response=$(capture_output process_message "$session_id" "$message" "$source")
@@ -450,10 +459,11 @@ daemon_loop() {
             while true; do
                 sleep "$HEARTBEAT_INTERVAL"
 
-                # Use a dedicated session to avoid polluting user sessions
-                session_init "heartbeat"
+                local heartbeat_session
+                heartbeat_session=$(resolve_history_session_id "heartbeat")
+                session_init "$heartbeat_session"
                 local response
-                response=$(capture_output process_message "heartbeat" "$heartbeat_message" "daemon")
+                response=$(capture_output process_message "$heartbeat_session" "$heartbeat_message" "daemon")
 
                 if [[ "$response" != "HEARTBEAT_OK" ]]; then
                     log_info "Heartbeat response: $response"

@@ -71,8 +71,8 @@ BASHOBOT_INTERFACE=none ./bashobot.sh -daemon
 | `/allowcmd [cmd]` | Allow a shell command for tool execution |
 | `/memory [cmd]` | Memory system (list, save, search, clear, on/off) |
 | `/context` | Show session estimated context/token usage |
-| `/clear` | Clear conversation (auto-saves to memory) |
-| `/summarize` | Force summarize the conversation |
+| `/new` | Start a new conversation (auto-saves to memory) |
+| `/compact` | Force compact the conversation |
 | `/exit` | Exit CLI (handled client-side, not sent to daemon) |
 
 ## Configuration
@@ -236,7 +236,7 @@ Bashobot supports tool calling for bash execution and file operations. Tools are
 Long-term memory through conversation summaries and keyword-based retrieval. Memories persist across sessions.
 
 #### How It Works
-- Auto-save on `/clear`: conversations are saved to memory when cleared.
+- Auto-save on `/new`: conversations are saved to memory when cleared.
 - Keyword extraction and topic extraction via LLM.
 - Relevance search based on keywords.
 - Relevant memories are injected at the start of new conversations.
