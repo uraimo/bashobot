@@ -9,7 +9,7 @@
 </div>
 
 
-BashoBot is a personal AI assistant built entirely in **pure bash** (compatible with bash 3.2+). Inspired by [OpenClaw](https://github.com/openclaw/openclaw), it uses only standard Unix utilities (`curl`, `jq`, `base64`, etc.) with no Node.js or other runtimes, implemented with a modular architecture using named pipes. It can run almost anywhere.
+BashoBot is a personal AI assistant built entirely in **bash** (compatible with bash 3.2+). Inspired by [OpenClaw](https://github.com/openclaw/openclaw), it uses only standard Unix utilities (`curl`, `jq`, `base64`, etc.) with no Node.js or other runtimes, implemented with a modular architecture using named pipes. It can run almost anywhere.
 
 
 <div align="center">
