@@ -22,7 +22,7 @@ BashoBot is a personal AI assistant built entirely in **bash** (compatible with 
 * Telegram or CLI interface
 * All major providers supported
 * All the basic OpenClaw features: tools, markdown memory, shared session, SOUL.md.
-* Easy to launch inside a container if you want to be safe
+* Easy to launch inside a container if you want to be safe, but comes with an optional whitelist with user approval for the exec tool.
 
 ## Quick Start
 
@@ -357,7 +357,7 @@ cat ~/.bashobot/pipes/output.pipe | cut -d'|' -f2 | base64 -d
 
 * *Is this a complete clone of OpenClaw?*: No and it doesn't plan to be, but it's small enough to show what the main components of a personal AI assistant are. The main objective of this project is to show that it's possible to build an assistant with the basic functionalities of OpenClaw  with just Bash and a bunch of utilities.
 
-* *Should I put this on my MacMini?*: Probably not, you'd better use the fully featured OpenClaw, but a project like this could make sense if you want to turn something with a minimal Linux installation and limited capabilities (for example an old rooted NAS with a few Mbs of RAM) into a personal assistant. Customize the project and adapt it to your own needs.
+* *Should I put this on my MacMini?*: Probably not, you'd better use the fully featured OpenClaw, but a project like this could make sense if you want to turn something with a minimal Linux installation and limited capabilities (for example an old rooted NAS with a few Mbs of RAM an a slightly bigger flash drive) into a personal assistant. Customize the project and adapt it to your own needs.
  
 
 ## License
@@ -366,5 +366,5 @@ This project is distributed under the MIT License.
 
 ## Acknowledgements
 
-The SOUL.md and some identity files from [OpenClaw](https://github.com/openclaw/openclaw), the obvious inspiration for this project.
+The SOUL.md and some identity files are from [OpenClaw](https://github.com/openclaw/openclaw), the obvious inspiration for this project.
 
