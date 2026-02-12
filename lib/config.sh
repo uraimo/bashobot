@@ -3,6 +3,31 @@
 # Bashobot Configuration Helpers
 #
 
+config_copy_templates() {
+    local src_dir="$BASHOBOT_DIR/templates"
+    if [[ ! -d "$src_dir" ]]; then
+        return 0
+    fi
+
+    local bootstrap_done="$CONFIG_DIR/BOOTSTRAP.done"
+    if [[ -f "$bootstrap_done" ]]; then
+        return 0
+    fi
+
+    mkdir -p "$CONFIG_DIR"
+
+    local file
+    for file in "$src_dir"/*.md; do
+        [[ -f "$file" ]] || continue
+        local base
+        base=$(basename "$file")
+        local dest="$CONFIG_DIR/$base"
+        if [[ ! -f "$dest" ]]; then
+            cp "$file" "$dest"
+        fi
+    done
+}
+
 config_ensure_file() {
     if [[ -f "$CONFIG_DIR/config.env" ]]; then
         return 0
@@ -51,6 +76,7 @@ EOF
 }
 
 config_load() {
+    config_copy_templates
     config_ensure_file
 
     # Load config

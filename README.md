@@ -145,6 +145,12 @@ bashobot.sh                 # Main entry point
 │   └── approval.sh         # Command whitelist approvals
 └── ~/.bashobot/            # Runtime data (created at first run)
     ├── config.env          # User configuration (API keys)
+    ├── BOOTSTRAP.md        # Optional bootstrap prompt (copied from templates/)
+    ├── BOOTSTRAP.done      # Bootstrap completion marker
+    ├── SOUL.md             # System prompt snippet (copied from templates/)
+    ├── IDENTITY.md         # System prompt snippet (copied from templates/)
+    ├── USER.md             # System prompt snippet (copied from templates/)
+    ├── AGENTS.md            # System prompt snippet (copied from templates/)
     ├── sessions/           # Conversation history (JSON files)
     │   ├── <id>.json
     │   └── <id>.llm.json   # Full LLM request/response logs

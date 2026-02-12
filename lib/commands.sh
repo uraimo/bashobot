@@ -30,12 +30,12 @@ cmd_model() {
         echo "Current provider: $LLM_PROVIDER"
         case "$LLM_PROVIDER" in
             gemini)          echo "Current model: ${GEMINI_MODEL:-gemini-3-flash-preview}" ;;
-            gemini-sub)      echo "Current model: ${GEMINI_SUB_MODEL:-gemini-2.5-flash}" ;;
+            gemini-sub)      echo "Current model: ${GEMINI_SUB_MODEL:-gemini-3-flash-preview}" ;;
             claude)          echo "Current model: ${CLAUDE_MODEL:-claude-haiku-4-5}" ;;
-            claude-sub)      echo "Current model: ${CLAUDE_SUB_MODEL:-claude-sonnet-4-20250514}" ;;
+            claude-sub)      echo "Current model: ${CLAUDE_SUB_MODEL:-claude-haiku-4-5}" ;;
             openai)          echo "Current model: ${OPENAI_MODEL:-gpt-5-nano}" ;;
-            openai-sub)      echo "Current model: ${OPENAI_SUB_MODEL:-gpt-5.1-codex}" ;;
-            antigravity-sub) echo "Current model: ${ANTIGRAVITY_SUB_MODEL:-gemini-3-pro}" ;;
+            openai-sub)      echo "Current model: ${OPENAI_SUB_MODEL:-gpt-5-nano}" ;;
+            antigravity-sub) echo "Current model: ${ANTIGRAVITY_SUB_MODEL:-gemini-3-flash}" ;;
             *)               echo "Current model: unknown" ;;
         esac
         echo ""

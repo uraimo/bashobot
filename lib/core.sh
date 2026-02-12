@@ -89,15 +89,29 @@ load_interface() {
 
 # Build system prompt
 _get_system_prompt() {
-    local base
-    local soul_file="$BASHOBOT_DIR/SOUL.md"
-    
-    if [[ -f "$soul_file" ]]; then
-        base=$(cat "$soul_file")
+    local base=""
+    local bootstrap_file="$CONFIG_DIR/BOOTSTRAP.md"
+    local bootstrap_done="$CONFIG_DIR/BOOTSTRAP.done"
+
+    if [[ -f "$bootstrap_file" ]] && [[ ! -f "$bootstrap_done" ]]; then
+        base="$(cat "$bootstrap_file")"
+        touch "$bootstrap_done"
     else
+        local prompt_files=("SOUL.md" "IDENTITY.md" "USER.md" "AGENTS.md")
+        local file
+        for file in "${prompt_files[@]}"; do
+            local path="$CONFIG_DIR/$file"
+            if [[ -f "$path" ]]; then
+                base+="$(cat "$path")"
+                base+=$'\n\n'
+            fi
+        done
+    fi
+
+    if [[ -z "$base" ]]; then
         base="You are Bashobot, a helpful personal AI assistant. Be concise and helpful."
     fi
-    
+
     if [[ "$BASHOBOT_TOOLS_ENABLED" == "true" ]]; then
         echo "$base You have access to tools for executing bash commands and reading/writing files. Use them when appropriate to help the user."
     else
