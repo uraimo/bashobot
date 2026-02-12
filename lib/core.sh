@@ -547,10 +547,12 @@ OPTIONS:
     -cli                Interactive CLI mode (connects to daemon via pipes)
     -status             Check if daemon is running
     -stop               Stop the running daemon
+    -login <provider>   Run OAuth login flow for subscription providers
+    -logout <provider>  Remove OAuth credentials for a provider
     -help               Show this help message
 
 ENVIRONMENT VARIABLES:
-    BASHOBOT_LLM        LLM provider (gemini, claude, openai)
+    BASHOBOT_LLM        LLM provider (gemini, claude, openai, gemini-sub, claude-sub, openai-sub, antigravity-sub)
     BASHOBOT_INTERFACE  Interface (telegram, none)
     BASHOBOT_CONFIG_DIR Config directory (default: ~/.bashobot)
     VERBOSE=1           Enable verbose output

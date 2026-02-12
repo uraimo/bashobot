@@ -32,6 +32,7 @@ OUTPUT_PIPE="$PIPE_DIR/output.pipe"
 source "$BASHOBOT_DIR/lib/tools.sh"
 source "$BASHOBOT_DIR/lib/session.sh"
 source "$BASHOBOT_DIR/lib/memory.sh"
+source "$BASHOBOT_DIR/lib/oauth.sh"
 source "$BASHOBOT_DIR/lib/commands.sh"
 source "$BASHOBOT_DIR/lib/approval.sh"
 source "$BASHOBOT_DIR/lib/config.sh"
@@ -94,18 +95,20 @@ stop_daemon() {
 
 main() {
     init_dirs
-    load_provider "$LLM_PROVIDER"
 
     case "${1:-}" in
         -daemon)
+            load_provider "$LLM_PROVIDER"
             load_interface "$INTERFACE"
             daemon_loop
             ;;
         -t)
             [[ -z "${2:-}" ]] && { echo "Error: Message required"; exit 1; }
+            load_provider "$LLM_PROVIDER"
             send_message "$2"
             ;;
         -cli)
+            load_provider "$LLM_PROVIDER"
             # Interactive mode that talks to daemon via pipes
             echo ""
             echo ""
@@ -126,6 +129,14 @@ main() {
                 send_message "$input" "$session_id"
                 echo ""
             done
+            ;;
+        -login)
+            [[ -z "${2:-}" ]] && { echo "Error: Provider required"; exit 1; }
+            oauth_login_provider "$2"
+            ;;
+        -logout)
+            [[ -z "${2:-}" ]] && { echo "Error: Provider required"; exit 1; }
+            oauth_logout_provider "$2"
             ;;
         -status)
             status_check

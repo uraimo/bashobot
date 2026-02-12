@@ -48,6 +48,12 @@ BASHOBOT_INTERFACE=none ./bashobot.sh -daemon
 # Send a single message
 ./bashobot.sh -t "What's 2+2?"
 
+# OAuth login for subscription providers
+./bashobot.sh -login claude-sub
+
+# OAuth logout for subscription providers
+./bashobot.sh -logout claude-sub
+
 # Check status / stop
 ./bashobot.sh -status
 ./bashobot.sh -stop
@@ -61,6 +67,7 @@ BASHOBOT_INTERFACE=none ./bashobot.sh -daemon
 | `/model [name]` | Show or switch model |
 | `/models` | List available models for current provider |
 | `/tools [on,off]` | Show or toggle tool usage |
+| `/login [provider]` | OAuth login (run `./bashobot.sh -login <provider>`) |
 | `/allowcmd [cmd]` | Allow a shell command for tool execution |
 | `/memory [cmd]` | Memory system (list, save, search, clear, on/off) |
 | `/context` | Show session estimated context/token usage |
@@ -73,7 +80,7 @@ BASHOBOT_INTERFACE=none ./bashobot.sh -daemon
 Edit `~/.bashobot/config.env`:
 
 ```bash
-# LLM Provider (gemini, claude, openai)
+# LLM Provider (gemini, claude, openai, gemini-sub, claude-sub, openai-sub, antigravity-sub)
 BASHOBOT_LLM=gemini
 
 # Interface (telegram, none)
@@ -86,6 +93,11 @@ BASHOBOT_TOOLS_ENABLED=true
 GEMINI_API_KEY=your_key
 ANTHROPIC_API_KEY=your_key
 OPENAI_API_KEY=your_key
+
+# Subscription OAuth (optional)
+# Run: ./bashobot.sh -login <provider>
+# Providers: claude-sub, openai-sub, gemini-sub, antigravity-sub
+# Credentials are stored in ~/.bashobot/auth.json
 
 # Telegram
 TELEGRAM_BOT_TOKEN=your_token
@@ -112,9 +124,13 @@ A few additional information that could be useful if you plan to extend this man
 ```
 bashobot.sh                 # Main entry point
 ├── providers/              # Pluggable LLM backends
-│   ├── gemini.sh           # Google Gemini (default)
-│   ├── claude.sh           # Anthropic Claude
-│   └── openai.sh           # OpenAI GPT
+│   ├── gemini.sh           # Google Gemini (API key)
+│   ├── claude.sh           # Anthropic Claude (API key)
+│   ├── openai.sh           # OpenAI GPT (API key)
+│   ├── gemini-sub.sh       # Gemini subscription (OAuth)
+│   ├── claude-sub.sh       # Claude subscription (OAuth)
+│   ├── openai-sub.sh       # OpenAI Codex subscription (OAuth)
+│   └── antigravity-sub.sh  # Antigravity subscription (OAuth)
 ├── interfaces/             # Pluggable chat interfaces
 │   ├── telegram.sh         # Telegram bot (long polling)
 │   └── none.sh             # Dummy (CLI-only mode)

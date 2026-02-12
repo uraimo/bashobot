@@ -12,7 +12,7 @@ config_ensure_file() {
 # Bashobot Configuration
 # Uncomment and set your API keys
 
-# LLM Provider (gemini, claude, openai)
+# LLM Provider (gemini, claude, openai, gemini-sub, claude-sub, openai-sub, antigravity-sub)
 #BASHOBOT_LLM=gemini
 
 # Gemini
@@ -23,6 +23,11 @@ config_ensure_file() {
 
 # OpenAI
 #OPENAI_API_KEY=your_key_here
+
+# Subscription OAuth (optional)
+# Run: ./bashobot.sh -login <provider>
+# Providers: claude-sub, openai-sub, gemini-sub, antigravity-sub
+# Credentials are stored in ~/.bashobot/auth.json
 
 # Telegram
 #TELEGRAM_BOT_TOKEN=your_token_here
@@ -74,16 +79,40 @@ config_write_runtime() {
                 echo "GEMINI_MODEL=$model_name"
             } > "$CONFIG_DIR/runtime.env"
             ;;
+        gemini-sub)
+            {
+                echo "LLM_PROVIDER=gemini-sub"
+                echo "GEMINI_SUB_MODEL=$model_name"
+            } > "$CONFIG_DIR/runtime.env"
+            ;;
         claude)
             {
                 echo "LLM_PROVIDER=claude"
                 echo "CLAUDE_MODEL=$model_name"
             } > "$CONFIG_DIR/runtime.env"
             ;;
+        claude-sub)
+            {
+                echo "LLM_PROVIDER=claude-sub"
+                echo "CLAUDE_SUB_MODEL=$model_name"
+            } > "$CONFIG_DIR/runtime.env"
+            ;;
         openai)
             {
                 echo "LLM_PROVIDER=openai"
                 echo "OPENAI_MODEL=$model_name"
+            } > "$CONFIG_DIR/runtime.env"
+            ;;
+        openai-sub)
+            {
+                echo "LLM_PROVIDER=openai-sub"
+                echo "OPENAI_SUB_MODEL=$model_name"
+            } > "$CONFIG_DIR/runtime.env"
+            ;;
+        antigravity-sub)
+            {
+                echo "LLM_PROVIDER=antigravity-sub"
+                echo "ANTIGRAVITY_SUB_MODEL=$model_name"
             } > "$CONFIG_DIR/runtime.env"
             ;;
     esac

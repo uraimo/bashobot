@@ -14,29 +14,83 @@
 cmd_model() {
     local session_id="$1"
     shift
+
+    local provider_arg=""
+    case "${1:-}" in
+        gemini|claude|openai|gemini-sub|claude-sub|openai-sub|antigravity-sub)
+            provider_arg="$1"
+            shift
+            ;;
+    esac
+
     local model_name="$*"
-    
+
     if [ -z "$model_name" ]; then
         # Show current model
         echo "Current provider: $LLM_PROVIDER"
         case "$LLM_PROVIDER" in
-            gemini)  echo "Current model: ${GEMINI_MODEL:-gemini-3-flash-preview}" ;;
-            claude)  echo "Current model: ${CLAUDE_MODEL:-claude-haiku-4-5}" ;;
-            openai)  echo "Current model: ${OPENAI_MODEL:-gpt-5-nano}" ;;
-            *)       echo "Current model: unknown" ;;
+            gemini)          echo "Current model: ${GEMINI_MODEL:-gemini-3-flash-preview}" ;;
+            gemini-sub)      echo "Current model: ${GEMINI_SUB_MODEL:-gemini-2.5-flash}" ;;
+            claude)          echo "Current model: ${CLAUDE_MODEL:-claude-haiku-4-5}" ;;
+            claude-sub)      echo "Current model: ${CLAUDE_SUB_MODEL:-claude-sonnet-4-20250514}" ;;
+            openai)          echo "Current model: ${OPENAI_MODEL:-gpt-5-nano}" ;;
+            openai-sub)      echo "Current model: ${OPENAI_SUB_MODEL:-gpt-5.1-codex}" ;;
+            antigravity-sub) echo "Current model: ${ANTIGRAVITY_SUB_MODEL:-gemini-3-pro}" ;;
+            *)               echo "Current model: unknown" ;;
         esac
         echo ""
-        echo "Usage: /model <modelname>"
+        echo "Usage: /model [provider] <modelname>"
         echo "Examples:"
         echo "  /model gemini-3-pro-preview"
         echo "  /model claude-haiku-4-5"
         echo "  /model gpt-5-nano"
+        echo "  /model openai-sub gpt-5.1-codex"
+        echo "  /model antigravity-sub gemini-3-pro"
         return 0
     fi
-    
-    # Detect provider from model name and set accordingly
-    case "$model_name" in
-        gemini-*)
+
+    local provider=""
+    if [[ -n "$provider_arg" ]]; then
+        provider="$provider_arg"
+    else
+        case "$LLM_PROVIDER" in
+            gemini-sub)
+                [[ "$model_name" == gemini-* ]] && provider="gemini-sub"
+                ;;
+            claude-sub)
+                [[ "$model_name" == claude-* || "$model_name" == anthropic-* ]] && provider="claude-sub"
+                ;;
+            openai-sub)
+                [[ "$model_name" == gpt-* || "$model_name" == o1-* || "$model_name" == o3-* ]] && provider="openai-sub"
+                ;;
+            antigravity-sub)
+                provider="antigravity-sub"
+                ;;
+        esac
+    fi
+
+    if [[ -z "$provider" ]]; then
+        case "$model_name" in
+            gemini-*)
+                provider="gemini"
+                ;;
+            claude-*|anthropic-*)
+                provider="claude"
+                ;;
+            gpt-*|o1-*|o3-*)
+                provider="openai"
+                ;;
+            *)
+                echo "Unknown model: $model_name"
+                echo "Model name should start with: gemini-, claude-, gpt-, o1-, o3-"
+                echo "Or specify a provider: /model <provider> <modelname>"
+                return 0
+                ;;
+        esac
+    fi
+
+    case "$provider" in
+        gemini)
             export GEMINI_MODEL="$model_name"
             export LLM_PROVIDER="gemini"
             source "$BASHOBOT_DIR/providers/gemini.sh" 2>/dev/null
@@ -44,7 +98,15 @@ cmd_model() {
             echo "Current model: ${GEMINI_MODEL}"
             config_write_runtime "gemini" "$GEMINI_MODEL"
             ;;
-        claude-*|anthropic-*)
+        gemini-sub)
+            export GEMINI_SUB_MODEL="$model_name"
+            export LLM_PROVIDER="gemini-sub"
+            source "$BASHOBOT_DIR/providers/gemini-sub.sh" 2>/dev/null
+            echo "Switched to Gemini subscription model: $model_name"
+            echo "Current model: ${GEMINI_SUB_MODEL}"
+            config_write_runtime "gemini-sub" "$GEMINI_SUB_MODEL"
+            ;;
+        claude)
             export CLAUDE_MODEL="$model_name"
             export LLM_PROVIDER="claude"
             source "$BASHOBOT_DIR/providers/claude.sh" 2>/dev/null
@@ -52,7 +114,15 @@ cmd_model() {
             echo "Current model: ${CLAUDE_MODEL}"
             config_write_runtime "claude" "$CLAUDE_MODEL"
             ;;
-        gpt-*|o1-*|o3-*)
+        claude-sub)
+            export CLAUDE_SUB_MODEL="$model_name"
+            export LLM_PROVIDER="claude-sub"
+            source "$BASHOBOT_DIR/providers/claude-sub.sh" 2>/dev/null
+            echo "Switched to Claude subscription model: $model_name"
+            echo "Current model: ${CLAUDE_SUB_MODEL}"
+            config_write_runtime "claude-sub" "$CLAUDE_SUB_MODEL"
+            ;;
+        openai)
             export OPENAI_MODEL="$model_name"
             export LLM_PROVIDER="openai"
             source "$BASHOBOT_DIR/providers/openai.sh" 2>/dev/null
@@ -60,13 +130,28 @@ cmd_model() {
             echo "Current model: ${OPENAI_MODEL}"
             config_write_runtime "openai" "$OPENAI_MODEL"
             ;;
+        openai-sub)
+            export OPENAI_SUB_MODEL="$model_name"
+            export LLM_PROVIDER="openai-sub"
+            source "$BASHOBOT_DIR/providers/openai-sub.sh" 2>/dev/null
+            echo "Switched to OpenAI subscription model: $model_name"
+            echo "Current model: ${OPENAI_SUB_MODEL}"
+            config_write_runtime "openai-sub" "$OPENAI_SUB_MODEL"
+            ;;
+        antigravity-sub)
+            export ANTIGRAVITY_SUB_MODEL="$model_name"
+            export LLM_PROVIDER="antigravity-sub"
+            source "$BASHOBOT_DIR/providers/antigravity-sub.sh" 2>/dev/null
+            echo "Switched to Antigravity subscription model: $model_name"
+            echo "Current model: ${ANTIGRAVITY_SUB_MODEL}"
+            config_write_runtime "antigravity-sub" "$ANTIGRAVITY_SUB_MODEL"
+            ;;
         *)
-            echo "Unknown model: $model_name"
-            echo "Model name should start with: gemini-, claude-, gpt-, o1-, o3-"
+            echo "Unknown provider: $provider"
             return 0
             ;;
     esac
-    
+
     return 0
 }
 
@@ -96,6 +181,29 @@ cmd_models() {
 }
 
 # ============================================================================
+# Command: /login [provider]
+# Start OAuth login (use CLI option)
+# ============================================================================
+cmd_login() {
+    local session_id="$1"
+    shift
+    local provider="$1"
+
+    if [[ -z "$provider" ]]; then
+        echo "Usage: /login <provider>"
+        echo "Available providers: claude-sub, openai-sub, gemini-sub, antigravity-sub"
+        echo ""
+        echo "Run the OAuth flow from your terminal:"
+        echo "  ./bashobot.sh -login <provider>"
+        return 0
+    fi
+
+    echo "OAuth login is interactive. Run this in a terminal:"
+    echo "  ./bashobot.sh -login $provider"
+    return 0
+}
+
+# ============================================================================
 # Command: /help
 # Show available commands
 # ============================================================================
@@ -105,6 +213,7 @@ cmd_help() {
     echo "  /model [name]  - Show or switch the current model"
     echo "  /models        - List available models for current provider"
     echo "  /tools [on|off]- Show or toggle tool usage"
+    echo "  /login [p]    - OAuth login (run ./bashobot.sh -login <provider>)"
     echo "  /allowcmd [c]  - Allow a shell command for tool execution"
     echo "  /memory [cmd]  - Memory system (list|save|search|clear)"
     echo "  /context       - Show session context/token usage"
@@ -322,6 +431,10 @@ process_command() {
             ;;
         tools)
             cmd_tools "$session_id" $args
+            return $?
+            ;;
+        login)
+            cmd_login "$session_id" $args
             return $?
             ;;
         allowcmd)
