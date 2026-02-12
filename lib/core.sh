@@ -91,11 +91,9 @@ load_interface() {
 _get_system_prompt() {
     local base=""
     local bootstrap_file="$CONFIG_DIR/BOOTSTRAP.md"
-    local bootstrap_done="$CONFIG_DIR/BOOTSTRAP.done"
 
-    if [[ -f "$bootstrap_file" ]] && [[ ! -f "$bootstrap_done" ]]; then
+    if [[ -f "$bootstrap_file" ]];  then
         base="$(cat "$bootstrap_file")"
-        touch "$bootstrap_done"
     else
         local prompt_files=("SOUL.md" "IDENTITY.md" "USER.md" "AGENTS.md")
         local file
