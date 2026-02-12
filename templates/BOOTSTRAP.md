@@ -54,7 +54,7 @@ Guide them through whichever they pick.
 
 ## When You're Done
 
-Rename this file BOOTSTRAP.done. You don't need a bootstrap script anymore — you're you now.
+Move this file to "BOOTSTRAP.done". You don't need a bootstrap script anymore — you're you now.
 
 ---
 

@@ -438,6 +438,19 @@ handle_incoming_message() {
 daemon_loop() {
     log_info "Starting Bashobot daemon..."
     log_info "LLM Provider: $LLM_PROVIDER"
+
+    local model_name="unknown"
+    case "$LLM_PROVIDER" in
+        gemini)          model_name="${GEMINI_MODEL:-gemini-3-flash-preview}" ;;
+        gemini-sub)      model_name="${GEMINI_SUB_MODEL:-gemini-3-flash}" ;;
+        claude)          model_name="${CLAUDE_MODEL:-claude-haiku-4-5}" ;;
+        claude-sub)      model_name="${CLAUDE_SUB_MODEL:-claude-haiku-4-5}" ;;
+        openai)          model_name="${OPENAI_MODEL:-gpt-5-nano}" ;;
+        openai-sub)      model_name="${OPENAI_SUB_MODEL:-gpt-5.1-codex}" ;;
+        antigravity-sub) model_name="${ANTIGRAVITY_SUB_MODEL:-gemini-3-flash}" ;;
+    esac
+    log_info "LLM Model: $model_name"
+
     log_info "Interface: $INTERFACE"
     log_info "Heartbeat interval: ${HEARTBEAT_INTERVAL}s"
 

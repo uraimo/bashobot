@@ -45,7 +45,7 @@ cmd_model() {
         echo "  /model claude-haiku-4-5"
         echo "  /model gpt-5-nano"
         echo "  /model openai-sub gpt-5.1-codex"
-        echo "  /model antigravity-sub gemini-3-pro"
+        echo "  /model antigravity-sub gemini-3-flash"
         return 0
     fi
 

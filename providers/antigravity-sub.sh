@@ -5,7 +5,7 @@
 # Required auth: OAuth via ./bashobot.sh -login antigravity-sub
 #
 
-ANTIGRAVITY_SUB_MODEL="${ANTIGRAVITY_SUB_MODEL:-gemini-3-pro}"
+ANTIGRAVITY_SUB_MODEL="${ANTIGRAVITY_SUB_MODEL:-gemini-3-flash}"
 ANTIGRAVITY_SUB_PRIMARY_URL="https://daily-cloudcode-pa.sandbox.googleapis.com"
 ANTIGRAVITY_SUB_FALLBACK_URL="https://cloudcode-pa.googleapis.com"
 
@@ -22,8 +22,15 @@ _antigravity_sub_get_creds() {
 }
 
 models_list() {
-    echo "Antigravity subscription models include Gemini 3, Claude, and GPT-OSS variants." 
-    echo "Set the model explicitly with /model antigravity-sub <model-id>."
+    echo "Antigravity subscription models (known IDs):"
+    echo "  - gemini-3-flash"
+    echo "  - gemini-3-pro-high"
+    echo "  - gemini-3-pro-low"
+    echo "  - claude-sonnet-4-5"
+    echo "  - claude-sonnet-4-5-thinking"
+    echo "  - claude-opus-4-5-thinking"
+    echo "  - gpt-oss-120b-medium"
+    echo "Use /model antigravity-sub <model-id> to switch."
 }
 
 # Convert our message format to Gemini format
@@ -138,7 +145,13 @@ _antigravity_sub_parse_sse() {
                 if ($part.text? != null) then
                     .text += $part.text
                 elif ($part.functionCall? != null) then
-                    .tool_calls += [ $part.functionCall ]
+                    .tool_calls += [
+                        {
+                            name: $part.functionCall.name,
+                            args: $part.functionCall.args,
+                            thoughtSignature: $part.thoughtSignature
+                        }
+                    ]
                 else . end
             )
         )')
@@ -219,9 +232,10 @@ llm_chat() {
             num_tools=$(echo "$tool_calls" | jq 'length')
 
             for ((i=0; i<num_tools; i++)); do
-                local func_name func_args
+                local func_name func_args thought_signature
                 func_name=$(echo "$tool_calls" | jq -r ".[$i].name")
                 func_args=$(echo "$tool_calls" | jq -c ".[$i].args")
+                thought_signature=$(echo "$tool_calls" | jq -r ".[$i].thoughtSignature // empty")
 
                 log_info "Tool call: $func_name with args: $func_args"
 
@@ -240,20 +254,61 @@ llm_chat() {
                 log_info "Tool result: ${tool_result:0:200}..."
 
                 # Add the function call and result to contents for next iteration
-                gemini_contents=$(echo "$gemini_contents" | jq --arg name "$func_name" --argjson args "$func_args" '. + [{ role: "model", parts: [{ functionCall: { name: $name, args: $args } }] }]')
+                local is_gemini3
+                if [[ "$ANTIGRAVITY_SUB_MODEL" == *"gemini-3"* ]]; then
+                    is_gemini3="true"
+                else
+                    is_gemini3="false"
+                fi
 
-                gemini_contents=$(echo "$gemini_contents" | jq \
-                    --arg name "$func_name" \
-                    --argjson result "$tool_result" \
-                    '. + [{
-                        role: "user",
-                        parts: [{
-                            functionResponse: {
-                                name: $name,
-                                response: $result
-                            }
-                        }]
-                    }]')
+                if [[ -n "$thought_signature" ]]; then
+                    gemini_contents=$(echo "$gemini_contents" | jq \
+                        --arg name "$func_name" \
+                        --argjson args "$func_args" \
+                        --arg thought "$thought_signature" \
+                        '. + [{ role: "model", parts: [{ functionCall: { name: $name, args: $args }, thoughtSignature: $thought }] }]')
+
+                    gemini_contents=$(echo "$gemini_contents" | jq \
+                        --arg name "$func_name" \
+                        --argjson result "$tool_result" \
+                        '. + [{
+                            role: "user",
+                            parts: [{
+                                functionResponse: {
+                                    name: $name,
+                                    response: $result
+                                }
+                            }]
+                        }]')
+                elif [[ "$is_gemini3" == "true" ]]; then
+                    local args_str
+                    args_str=$(echo "$func_args" | jq -c '.' 2>/dev/null || echo "$func_args")
+                    local tool_text
+                    tool_text="[Historical context: a different model called tool \"$func_name\" with arguments: ${args_str}. Do not mimic this format - use proper function calling.]"
+
+                    gemini_contents=$(echo "$gemini_contents" | jq --arg text "$tool_text" '. + [{ role: "model", parts: [{ text: $text }] }]')
+
+                    gemini_contents=$(echo "$gemini_contents" | jq --arg name "$func_name" --arg result "$tool_result" \
+                        '. + [{
+                            role: "user",
+                            parts: [{ text: ("Tool result for " + $name + ": " + $result) }]
+                        }]')
+                else
+                    gemini_contents=$(echo "$gemini_contents" | jq --arg name "$func_name" --argjson args "$func_args" '. + [{ role: "model", parts: [{ functionCall: { name: $name, args: $args } }] }]')
+
+                    gemini_contents=$(echo "$gemini_contents" | jq \
+                        --arg name "$func_name" \
+                        --argjson result "$tool_result" \
+                        '. + [{
+                            role: "user",
+                            parts: [{
+                                functionResponse: {
+                                    name: $name,
+                                    response: $result
+                                }
+                            }]
+                        }]')
+                fi
             done
 
             continue
