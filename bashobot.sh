@@ -121,11 +121,11 @@ main() {
             echo ""
             local session_id="cli_$$"
             while true; do
-                echo -n "You: "
+                echo -ne "\033[1;33mYou:\033[0m "
                 read -r input || break  # Handle Ctrl+D
                 [[ -z "$input" ]] && continue
                 [[ "$input" == "/exit" ]] && { echo "Goodbye!"; break; }
-                echo -n "Bot: "
+                echo -ne "\033[1;31mBot:\033[0m "
                 send_message "$input" "$session_id"
                 echo ""
             done
