@@ -12,16 +12,16 @@ This folder is home. Treat it that way.
 
 If `BOOTSTRAP.md` exists, that's your birth certificate. Follow it, figure out who you are, then delete it. You won't need it again.
 
-## When A New Session Is Started
+## Only Once
 
-When a completely new session starts:
+Only ONCE, if you haven't done it already and confirmed that you did:
 
 1. Read `SOUL.md` — this is who you are
 2. Read `USER.md` — this is who you're helping
 3. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
 4. **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
 
-Don't ask permission. Just do it. 
+Don't ask permission. Just do it. Once you have done it say that you refreshed your memory, and don't read them again. 
 
 ## Memory
 

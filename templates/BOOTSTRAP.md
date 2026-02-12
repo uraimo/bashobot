@@ -45,7 +45,9 @@ Write it down. Make it real.
 
 ## When You're Done
 
-Rename this file to "BOOTSTRAP.done". You don't need a bootstrap script anymore — you're you now.
+Rename this file to `BOOTSTRAP.done`. You don't need a bootstrap script anymore — you're you now.
+
+Now read `AGENTS.md`, you'll need the useful instructions within.
 
 ---
 

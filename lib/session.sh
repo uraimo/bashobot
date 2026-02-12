@@ -320,7 +320,4 @@ force_summarize() {
         }' > "${session_file}.tmp" && mv "${session_file}.tmp" "$session_file"
     
     echo "Session summarized. $message_count messages condensed."
-    echo ""
-    echo "Summary:"
-    echo "$new_summary"
 }
