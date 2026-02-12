@@ -16,6 +16,13 @@ BashoBot is a personal AI assistant built entirely in **bash** (compatible with 
   <img src="https://github.com/uraimo/bashobot/blob/main/static/bashobot.gif?raw=true">
 </div>
 
+## Features
+
+* Bash-only application, modular architecture based on named pipes
+* Telegram or CLI interface
+* All major providers supported
+* All the basic OpenClaw features: tools, markdown memory, shared session, SOUL.md.
+* Easy to launch inside a container if you want to be safe
 
 ## Quick Start
 
@@ -355,5 +362,9 @@ cat ~/.bashobot/pipes/output.pipe | cut -d'|' -f2 | base64 -d
 
 ## License
 
-MIT
+This project is distributed under the MIT License.
+
+## Acknowledgements
+
+The SOUL.md and some identity files from [OpenClaw](https://github.com/openclaw/openclaw), the obvious inspiration for this project.
 
