@@ -116,6 +116,83 @@ oauth_show_auth_url() {
     } >&2
 }
 
+# Anthropic (Claude Pro/Max)
+_ANTHROPIC_CLIENT_ID=$(oauth_basho_decode "YmFzaG98OWQxYzI1MGEtZTYxYi00NGQ5LTg4ZWQtNTk0ZDE5NjJmNWU=")
+_ANTHROPIC_AUTHORIZE_URL="https://claude.ai/oauth/authorize"
+_ANTHROPIC_TOKEN_URL="https://console.anthropic.com/v1/oauth/token"
+_ANTHROPIC_REDIRECT_URI="https://console.anthropic.com/oauth/code/callback"
+_ANTHROPIC_SCOPES="org:create_api_key user:profile user:inference"
+
+oauth_login_claude_sub() {
+    local pkce verifier challenge
+    pkce=$(oauth_generate_pkce)
+    verifier="${pkce%%|*}"
+    challenge="${pkce##*|}"
+
+    local auth_url
+    auth_url="${_ANTHROPIC_AUTHORIZE_URL}?code=true&client_id=${_ANTHROPIC_CLIENT_ID}&response_type=code&redirect_uri=${_ANTHROPIC_REDIRECT_URI}&scope=${_ANTHROPIC_SCOPES}&code_challenge=${challenge}&code_challenge_method=S256&state=${verifier}"
+
+    oauth_show_auth_url "$auth_url" ""
+    read -r -p "Paste the authorization code (format: code#state): " auth_input
+
+    local code state
+    code="${auth_input%%#*}"
+    state="${auth_input##*#}"
+
+    if [[ -z "$code" || -z "$state" ]]; then
+        echo "Error: Invalid authorization code format." >&2
+        return 1
+    fi
+
+    local response
+    response=$(curl -s -X POST "$_ANTHROPIC_TOKEN_URL" \
+        -H "Content-Type: application/json" \
+        -d "{\"grant_type\":\"authorization_code\",\"client_id\":\"$_ANTHROPIC_CLIENT_ID\",\"code\":\"$code\",\"state\":\"$state\",\"redirect_uri\":\"$_ANTHROPIC_REDIRECT_URI\",\"code_verifier\":\"$verifier\"}")
+
+    local access refresh expires_in
+    access=$(echo "$response" | jq -r '.access_token // empty')
+    refresh=$(echo "$response" | jq -r '.refresh_token // empty')
+    expires_in=$(echo "$response" | jq -r '.expires_in // 0')
+
+    if [[ -z "$access" || -z "$refresh" || "$expires_in" == "0" ]]; then
+        local err
+        err=$(echo "$response" | jq -r '.error // .message // empty')
+        echo "Anthropic login failed${err:+: $err}" >&2
+        return 1
+    fi
+
+    local expires
+    expires=$(( $(date +%s) * 1000 + expires_in * 1000 - 300000 ))
+
+    jq -n --arg access "$access" --arg refresh "$refresh" --argjson expires "$expires" '{access:$access,refresh:$refresh,expires:$expires}'
+}
+
+oauth_refresh_claude_sub() {
+    local refresh_token="$1"
+
+    local response
+    response=$(curl -s -X POST "$_ANTHROPIC_TOKEN_URL" \
+        -H "Content-Type: application/json" \
+        -d "{\"grant_type\":\"refresh_token\",\"client_id\":\"$_ANTHROPIC_CLIENT_ID\",\"refresh_token\":\"$refresh_token\"}")
+
+    local access refresh expires_in
+    access=$(echo "$response" | jq -r '.access_token // empty')
+    refresh=$(echo "$response" | jq -r '.refresh_token // empty')
+    expires_in=$(echo "$response" | jq -r '.expires_in // 0')
+
+    if [[ -z "$access" || -z "$refresh" || "$expires_in" == "0" ]]; then
+        local err
+        err=$(echo "$response" | jq -r '.error // .message // empty')
+        echo "Anthropic token refresh failed${err:+: $err}" >&2
+        return 1
+    fi
+
+    local expires
+    expires=$(( $(date +%s) * 1000 + expires_in * 1000 - 300000 ))
+
+    jq -n --arg access "$access" --arg refresh "$refresh" --argjson expires "$expires" '{access:$access,refresh:$refresh,expires:$expires}'
+}
+
 # OpenAI Codex (ChatGPT OAuth)
 _OPENAI_CODEX_CLIENT_ID=$(oauth_basho_decode "YmFzaG98YXBwX0VNb2FtRUVaNzNmMENrWGFYcDdocmFubg==")
 _OPENAI_CODEX_AUTHORIZE_URL="https://auth.openai.com/oauth/authorize"
@@ -503,6 +580,9 @@ oauth_login_provider() {
     fi
 
     case "$provider" in
+        claude-sub)
+            creds=$(oauth_login_claude_sub) || return 1
+            ;;
         openai-sub)
             creds=$(oauth_login_openai_sub) || return 1
             ;;
@@ -551,6 +631,9 @@ oauth_get_access_token() {
     if [[ "$expires" != "0" && "$now" -ge "$expires" ]]; then
         local refreshed
         case "$provider" in
+            claude-sub)
+                refreshed=$(oauth_refresh_claude_sub "$(echo "$creds" | jq -r '.refresh')") || return 1
+                ;;
             openai-sub)
                 refreshed=$(oauth_refresh_openai_sub "$(echo "$creds" | jq -r '.refresh')") || return 1
                 ;;
