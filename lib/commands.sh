@@ -17,7 +17,7 @@ cmd_model() {
 
     local provider_arg=""
     case "${1:-}" in
-        gemini|claude|openai|gemini-sub|claude-sub|openai-sub|antigravity-sub)
+        gemini|claude|openai|gemini-sub|openai-sub|antigravity-sub)
             provider_arg="$1"
             shift
             ;;
@@ -32,7 +32,6 @@ cmd_model() {
             gemini)          echo "Current model: ${GEMINI_MODEL:-gemini-3-flash-preview}" ;;
             gemini-sub)      echo "Current model: ${GEMINI_SUB_MODEL:-gemini-3-flash-preview}" ;;
             claude)          echo "Current model: ${CLAUDE_MODEL:-claude-haiku-4-5}" ;;
-            claude-sub)      echo "Current model: ${CLAUDE_SUB_MODEL:-claude-haiku-4-5}" ;;
             openai)          echo "Current model: ${OPENAI_MODEL:-gpt-5-nano}" ;;
             openai-sub)      echo "Current model: ${OPENAI_SUB_MODEL:-gpt-5-nano}" ;;
             antigravity-sub) echo "Current model: ${ANTIGRAVITY_SUB_MODEL:-gemini-3-flash}" ;;
@@ -56,9 +55,6 @@ cmd_model() {
         case "$LLM_PROVIDER" in
             gemini-sub)
                 [[ "$model_name" == gemini-* ]] && provider="gemini-sub"
-                ;;
-            claude-sub)
-                [[ "$model_name" == claude-* || "$model_name" == anthropic-* ]] && provider="claude-sub"
                 ;;
             openai-sub)
                 [[ "$model_name" == gpt-* || "$model_name" == o1-* || "$model_name" == o3-* ]] && provider="openai-sub"
@@ -113,14 +109,6 @@ cmd_model() {
             echo "Switched to Claude model: $model_name"
             echo "Current model: ${CLAUDE_MODEL}"
             config_write_runtime "claude" "$CLAUDE_MODEL"
-            ;;
-        claude-sub)
-            export CLAUDE_SUB_MODEL="$model_name"
-            export LLM_PROVIDER="claude-sub"
-            source "$BASHOBOT_DIR/providers/claude-sub.sh" 2>/dev/null
-            echo "Switched to Claude subscription model: $model_name"
-            echo "Current model: ${CLAUDE_SUB_MODEL}"
-            config_write_runtime "claude-sub" "$CLAUDE_SUB_MODEL"
             ;;
         openai)
             export OPENAI_MODEL="$model_name"
@@ -191,7 +179,7 @@ cmd_login() {
 
     if [[ -z "$provider" ]]; then
         echo "Usage: /login <provider>"
-        echo "Available providers: claude-sub, openai-sub, gemini-sub, antigravity-sub"
+        echo "Available providers: openai-sub, gemini-sub, antigravity-sub"
         echo ""
         echo "Run the OAuth flow from your terminal:"
         echo "  ./bashobot.sh -login <provider>"

@@ -445,7 +445,6 @@ daemon_loop() {
         gemini)          model_name="${GEMINI_MODEL:-gemini-3-flash-preview}" ;;
         gemini-sub)      model_name="${GEMINI_SUB_MODEL:-gemini-3-flash}" ;;
         claude)          model_name="${CLAUDE_MODEL:-claude-haiku-4-5}" ;;
-        claude-sub)      model_name="${CLAUDE_SUB_MODEL:-claude-haiku-4-5}" ;;
         openai)          model_name="${OPENAI_MODEL:-gpt-5-nano}" ;;
         openai-sub)      model_name="${OPENAI_SUB_MODEL:-gpt-5.1-codex}" ;;
         antigravity-sub) model_name="${ANTIGRAVITY_SUB_MODEL:-gemini-3-flash}" ;;
@@ -590,7 +589,7 @@ OPTIONS:
     -help               Show this help message
 
 ENVIRONMENT VARIABLES:
-    BASHOBOT_LLM        LLM provider (gemini, claude, openai, gemini-sub, claude-sub, openai-sub, antigravity-sub)
+    BASHOBOT_LLM        LLM provider (gemini, claude, openai, gemini-sub, openai-sub, antigravity-sub)
     BASHOBOT_INTERFACE  Interface (telegram, none)
     BASHOBOT_CONFIG_DIR Config directory (default: ~/.bashobot)
     VERBOSE=1           Enable verbose output
