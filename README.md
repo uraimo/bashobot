@@ -57,10 +57,10 @@ BASHOBOT_INTERFACE=none ./bashobot.sh -daemon
 ./bashobot.sh -t "What's 2+2?"
 
 # OAuth login for subscription providers
-./bashobot.sh -login claude-sub
+./bashobot.sh -login openai-sub
 
 # OAuth logout for subscription providers
-./bashobot.sh -logout claude-sub
+./bashobot.sh -logout openai-sub
 
 # Check status / stop
 ./bashobot.sh -status
@@ -88,7 +88,7 @@ BASHOBOT_INTERFACE=none ./bashobot.sh -daemon
 Edit `~/.bashobot/config.env`:
 
 ```bash
-# LLM Provider (gemini, claude, openai, gemini-sub, claude-sub, openai-sub, antigravity-sub)
+# LLM Provider (gemini, claude, openai, gemini-sub, openai-sub, antigravity-sub)
 BASHOBOT_LLM=gemini
 
 # Interface (telegram, none)
@@ -104,7 +104,7 @@ OPENAI_API_KEY=your_key
 
 # Subscription OAuth (optional)
 # Run: ./bashobot.sh -login <provider>
-# Providers: claude-sub, openai-sub, gemini-sub, antigravity-sub
+# Providers: openai-sub, gemini-sub, antigravity-sub
 # Credentials are stored in ~/.bashobot/auth.json
 
 # Telegram
@@ -136,7 +136,6 @@ bashobot.sh                 # Main entry point
 │   ├── claude.sh           # Anthropic Claude (API key)
 │   ├── openai.sh           # OpenAI GPT (API key)
 │   ├── gemini-sub.sh       # Gemini subscription (OAuth)
-│   ├── claude-sub.sh       # Claude subscription (OAuth)
 │   ├── openai-sub.sh       # OpenAI Codex subscription (OAuth)
 │   └── antigravity-sub.sh  # Antigravity subscription (OAuth)
 ├── interfaces/             # Pluggable chat interfaces
