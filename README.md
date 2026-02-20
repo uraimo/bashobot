@@ -5,6 +5,7 @@
     <img src="https://img.shields.io/badge/bash-≥3.2-blue" alt="Bash">
     <img src="https://img.shields.io/badge/Shell-100%25-orange" alt="Bash">
     <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
+    <a href="https://deepwiki.com/uraimo/bashobot/"><img src="https://img.shields.io/badge/DokuWiki-bashobot-blue" alt="Documentation"></a>
   </p>
 </div>
 
